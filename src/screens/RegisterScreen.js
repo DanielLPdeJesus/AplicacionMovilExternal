@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
 import { RadioButton } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import Toast from 'react-native-toast-message';
 
 const RegisterScreen = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
@@ -13,10 +14,86 @@ const RegisterScreen = ({ navigation }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = () => {
-    console.log('Registro exitoso');
-    navigation.navigate('Home');
+  const handleRegister = async () => {
+    console.log('Iniciando registro...');
+    // Validaciones básicas
+    if (password !== confirmPassword) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Las contraseñas no coinciden',
+      });
+      return;
+    }
+    if (password.length < 6) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'La contraseña debe tener al menos 6 caracteres',
+      });
+      return;
+    }
+
+    console.log('Datos a enviar:', {
+      fullName,
+      lastName,
+      email,
+      phone,
+      gender,
+      birthDate: birthDate.toISOString(),
+      password,
+    });
+
+    setIsLoading(true);
+
+    try {
+      console.log('Enviando solicitud al servidor...');
+      const response = await fetch('https://jaydey.pythonanywhere.com/sesion/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName,
+          lastName,
+          email,
+          phone,
+          gender,
+          birthDate: birthDate.toISOString(),
+          password,
+        }),
+      });
+
+      console.log('Respuesta recibida:', response.status);
+      const data = await response.json();
+      console.log('Datos de respuesta:', data);
+
+      if (data.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Éxito',
+          text2: 'Registro exitoso. Se ha enviado un correo de verificación.',
+        });
+        navigation.navigate('Login');
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: data.message || "Error durante el registro. Por favor, inténtalo de nuevo.",
+        });
+      }
+    } catch (error) {
+      console.error('Error al hacer la solicitud:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: "No se pudo conectar con el servidor. Por favor, inténtalo más tarde.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const showDatePickerHandler = () => {
@@ -70,8 +147,8 @@ const RegisterScreen = ({ navigation }) => {
       <Text style={styles.label}>Sexo</Text>
       <RadioButton.Group onValueChange={setGender} value={gender}>
         <View style={styles.radioGroup}>
-          <RadioButton.Item label="Masculino" value="masculino" />
-          <RadioButton.Item label="Femenino" value="femenino" />
+          <RadioButton.Item label="M" value="masculino" />
+          <RadioButton.Item label="F" value="femenino" />
           <RadioButton.Item label="Otro" value="otro" />
         </View>
       </RadioButton.Group>
@@ -113,8 +190,14 @@ const RegisterScreen = ({ navigation }) => {
         secureTextEntry
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Registrarse</Text>
+      <TouchableOpacity 
+        style={[styles.button, isLoading && styles.disabledButton]} 
+        onPress={handleRegister}
+        disabled={isLoading}
+      >
+        <Text style={styles.buttonText}>
+          {isLoading ? 'Registrando...' : 'Registrarse'}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -165,6 +248,9 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  disabledButton: {
+    backgroundColor: 'gray',
   },
 });
 
