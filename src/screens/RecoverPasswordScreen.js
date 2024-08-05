@@ -1,12 +1,32 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 
 const RecuperarContrasenaScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [mensajeEnviado, setMensajeEnviado] = useState(false);
 
-  const handleRecuperarContrasena = () => {
-    setMensajeEnviado(true);
+  const handleRecuperarContrasena = async () => {
+    try {
+      const response = await fetch('https://jaydey.pythonanywhere.com/Authentication/api/recuperar-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMensajeEnviado(true);
+        Alert.alert('Éxito', data.message);
+      } else {
+        Alert.alert('Error', data.error || 'Hubo un problema al procesar tu solicitud.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      Alert.alert('Error', 'Hubo un problema de conexión. Por favor, intenta de nuevo.');
+    }
   };
 
   return (
@@ -41,7 +61,6 @@ const RecuperarContrasenaScreen = ({ navigation }) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

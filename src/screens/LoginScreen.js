@@ -1,72 +1,113 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [rememberPassword, setRememberPassword] = useState(false);
-  
-    const handleLogin = () => {
-      console.log('Login attempt:', email, password);
-    };
-  
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Iniciar Sesión</Text>
-  
-        <View style={styles.logoContainer}>
-          <Image 
-            source={require('../../assets/logo.png')} 
-            style={styles.logo} 
-          />
-          <Text style={styles.welcome}>
-            Bienvenido a nuestra plataforma de inicio de sesión
-          </Text>
-        </View>
-  
-        <TextInput
-          style={styles.input}
-          placeholder="Ingresa tu correo electrónico"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-        />
-  
-        <TextInput
-          style={styles.input}
-          placeholder="Ingresa tu contraseña"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-  
-        <View style={styles.checkboxContainer}>
-          <TouchableOpacity 
-            style={styles.checkbox}
-            onPress={() => setRememberPassword(!rememberPassword)}
-          >
-            {rememberPassword && <View style={styles.checkboxInner} />}
-          </TouchableOpacity>
-          <Text style={styles.checkboxLabel}>Recordar Contraseña</Text>
-        </View>
-  
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Entrar</Text>
-      </TouchableOpacity>
-  
-      <TouchableOpacity onPress={() => navigation.navigate('RecoverPassword')}>
-        <Text style={styles.forgotPassword}>Recuperar contraseña</Text>
-      </TouchableOpacity>
+    const [isLoading, setIsLoading] = useState(false);
 
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-        <Text style={styles.registerText}>¿No tienes cuenta? Regístrate</Text>
-        </TouchableOpacity>
-      </View>
+    const handleLogin = async () => {
+        if (!email || !password) {
+            Alert.alert('Error', 'Por favor, ingresa tu correo electrónico y contraseña.');
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            const response = await fetch('https://jaydey.pythonanywhere.com/Authentication/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    password
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                Alert.alert('Éxito', data.message, [
+                    { text: 'OK', onPress: () => navigation.navigate('Home') }
+                ]);
+            } else {
+                Alert.alert('Error', data.message || 'Hubo un problema al iniciar sesión.');
+            }
+        } catch (error) {
+            console.error('Error durante el inicio de sesión:', error);
+            Alert.alert('Error', 'Hubo un problema al conectar con el servidor. Por favor, inténtalo de nuevo.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <View style={styles.container}>
+            <Text style={styles.title}>Iniciar Sesión</Text>
+
+            <View style={styles.logoContainer}>
+                <Image 
+                    source={require('../../assets/logodani.jpg')} 
+                    style={styles.logo} 
+                />
+                <Text style={styles.welcome}>
+                    Bienvenido a nuestra plataforma de inicio de sesión
+                </Text>
+            </View>
+
+            <TextInput
+                style={styles.input}
+                placeholder="Ingresa tu correo electrónico"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+            />
+
+            <TextInput
+                style={styles.input}
+                placeholder="Ingresa tu contraseña"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+            />
+
+            <View style={styles.checkboxContainer}>
+                <TouchableOpacity 
+                    style={styles.checkbox}
+                    onPress={() => setRememberPassword(!rememberPassword)}
+                >
+                    {rememberPassword && <View style={styles.checkboxInner} />}
+                </TouchableOpacity>
+                <Text style={styles.checkboxLabel}>Recordar Contraseña</Text>
+            </View>
+
+            <TouchableOpacity 
+                style={[styles.button, isLoading && styles.buttonDisabled]} 
+                onPress={handleLogin}
+                disabled={isLoading}
+            >
+                <Text style={styles.buttonText}>
+                    {isLoading ? 'Cargando...' : 'Entrar'}
+                </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => navigation.navigate('RecoverPassword')}>
+                <Text style={styles.forgotPassword}>Recuperar contraseña</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.registerText}>¿No tienes cuenta? Regístrate</Text>
+            </TouchableOpacity>
+        </View>
     );
-  };
-  
-  const styles = StyleSheet.create({
+};
+
+const styles = StyleSheet.create({
     container: {
       flex: 1,
       justifyContent: 'center',
@@ -144,6 +185,9 @@ const LoginScreen = ({ navigation }) => {
       color: 'blue',
       textDecorationLine: 'underline',
     },
-  });
+    buttonDisabled: {
+      backgroundColor: 'gray',
+    },
+});
 
-  export default LoginScreen;
+export default LoginScreen;

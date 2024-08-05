@@ -18,7 +18,6 @@ const RegisterScreen = ({ navigation }) => {
 
   const handleRegister = async () => {
     console.log('Iniciando registro...');
-    // Validaciones básicas
     if (password !== confirmPassword) {
       Toast.show({
         type: 'error',
@@ -50,7 +49,7 @@ const RegisterScreen = ({ navigation }) => {
 
     try {
       console.log('Enviando solicitud al servidor...');
-      const response = await fetch('https://jaydey.pythonanywhere.com/sesion/api/register', {
+      const response = await fetch('https://jaydey.pythonanywhere.com/Authentication/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -189,7 +188,7 @@ const RegisterScreen = ({ navigation }) => {
         onChangeText={setConfirmPassword}
         secureTextEntry
       />
-
+      <Text style={styles.textregi}>Recuerda que al Registrarte aceptas autmaticamente los terminos y condiciones y el aviso de privacidad</Text>
       <TouchableOpacity 
         style={[styles.button, isLoading && styles.disabledButton]} 
         onPress={handleRegister}
@@ -252,6 +251,9 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: 'gray',
   },
+  textregi:{
+    textAlign: 'center',
+  }
 });
 
 export default RegisterScreen;
