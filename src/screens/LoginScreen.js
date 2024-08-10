@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
@@ -31,9 +32,15 @@ const LoginScreen = ({ navigation }) => {
             const data = await response.json();
 
             if (data.success) {
-                Alert.alert('Éxito', data.message, [
-                    { text: 'OK', onPress: () => navigation.navigate('Home') }
-                ]);
+
+               await AsyncStorage.setItem('userSession', JSON.stringify({
+                id_token: data.id_token,
+                user: data.user
+            }));
+
+            Alert.alert('Éxito', data.message, [
+                { text: 'OK', onPress: () => navigation.navigate('Home') }
+            ]);
             } else {
                 Alert.alert('Error', data.message || 'Hubo un problema al iniciar sesión.');
             }

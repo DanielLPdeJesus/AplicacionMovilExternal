@@ -30,30 +30,49 @@ const HomeScreen = ({ navigation }) => {
       <Text style={styles.businessName}>{item.business_name}</Text>
       <Text style={styles.businessAddress}>{item.business_address}</Text>
       <Text style={styles.businessServices}>{item.services_offered}</Text>
-      <TouchableOpacity style={styles.reserveButton}  onPress={() => navigation.navigate('Reservation')}>
+      <TouchableOpacity 
+        style={styles.reserveButton}  
+        onPress={() => navigation.navigate('Reservation', { businessId: item.id})}
+      >
         <Text style={styles.reserveButtonText}>Reservar cita</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
 
+
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Inicio</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.profileText}>Perfil</Text>
+
+      <View style={styles.headerinfo}>
+        <View style={styles.avatarContainerinfo}>
+          <Image
+            source={require('../../assets/logodani.jpg')}
+            style={styles.avatarinfo}
+          />
+        </View>
+        <View style={styles.headerTextinfo}>
+          <Text style={styles.nameinfo}>Adal Mendez Jimenez</Text>
+          <Text style={styles.professioninfo}>Ing en desarrollo de sofware</Text>
+        </View>
+        <TouchableOpacity style={styles.editButtoninfo} onPress={() => navigation.navigate('Profile')
+        }>
+          <Text style={styles.editButtonTextinfo}>Perfil</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.categories}>
-        <TouchableOpacity style={styles.categoryButton}>
-          <Text>Manicuristas</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.categoryButton}>
-          <Text>Maquillaje</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.categoryButton}>
-          <Text>Estilista</Text>
-        </TouchableOpacity>
+      <TouchableOpacity style={styles.categoryButton}>
+        <Image source={require('../../assets/manicurista.png')} style={styles.icon} />
+        <Text style={styles.textcat}>Manicuristas</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.categoryButton}>
+        <Image source={require('../../assets/maquillista2.png')} style={styles.icon} />
+        <Text style={styles.textcat}>Maquillista</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.categoryButton}>
+        <Image source={require('../../assets/Estilista.png')} style={styles.icon} />
+        <Text style={styles.textcat}>Estilista</Text>
+      </TouchableOpacity>
       </View>
       <FlatList
         data={businesses}
@@ -68,6 +87,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    padding: 15
   },
   header: {
     flexDirection: 'row',
@@ -86,12 +106,18 @@ const styles = StyleSheet.create({
   categories: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    padding: 16,
+    padding: 10,
   },
   categoryButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+  },
+  icon: {
+    width: 50, 
+    height: 50, 
+    marginBottom: 5,
+  },
+  textcat: {
+    fontSize: 16,
   },
   businessItem: {
     margin: 16,
@@ -134,6 +160,45 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
+
+  headerinfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  avatarContainerinfo: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#ccc',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarinfo: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  headerTextinfo: {
+    marginLeft: 15,
+    flex: 1,
+  },
+  nameinfo: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  professioninfo: {
+    fontSize: 14,
+    color: '#888',
+  },
+  editButtoninfo: {
+    backgroundColor: '#f0f0f0',
+    padding: 8,
+    borderRadius: 5,
+  },
+  editButtonTextinfo: {
+    fontSize: 12,
+  }
 });
 
 export default HomeScreen;
