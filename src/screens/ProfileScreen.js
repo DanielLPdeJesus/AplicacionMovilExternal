@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { checkAuth } from '../utils/authUtils'; // Asegúrate de que esta ruta sea correcta
+import { checkAuth } from '../utils/authUtils'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfileScreen = ({ navigation, route }) => {
@@ -26,7 +26,7 @@ const ProfileScreen = ({ navigation, route }) => {
     setIsLoading(true);
     try {
       await AsyncStorage.removeItem('userSession');
-      navigation.replace('Home');
+      navigation.replace('HomeTabs');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
       setIsLoading(false);

@@ -39,7 +39,7 @@ const LoginScreen = ({ navigation }) => {
             }));
 
             Alert.alert('Éxito', data.message, [
-                { text: 'OK', onPress: () => navigation.navigate('Home') }
+                { text: 'OK', onPress: () => navigation.navigate('HomeTabs') }
             ]);
             } else {
                 Alert.alert('Error', data.message || 'Hubo un problema al iniciar sesión.');
@@ -113,6 +113,7 @@ const LoginScreen = ({ navigation }) => {
         </View>
     );
 };
+
 
 const styles = StyleSheet.create({
     container: {
@@ -194,6 +195,12 @@ const styles = StyleSheet.create({
     },
     buttonDisabled: {
       backgroundColor: 'gray',
+    },
+    backButton: {
+      position: 'absolute',
+      top: 40,
+      left: 20,
+      padding: 10,
     },
 });
 
