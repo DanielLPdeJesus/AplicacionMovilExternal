@@ -1,39 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { checkAuth } from '../utils/authUtils'; 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../context/AuthContext';
 
-const ProfileScreen = ({ navigation, route }) => {
+const ProfileScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState(null);
 
-  useEffect(() => {
-    const verifyAuthAndLoadData = async () => {
-      const { isAuthenticated, user } = await checkAuth();
-      if (!isAuthenticated) {
-        navigation.replace('Login');
-      } else {
-        setUserData(user);
-        setIsLoading(false);
-      }
-    };
+  const { isLoggedIn, user, logout } = useAuth();
 
-    verifyAuthAndLoadData();
-  }, [navigation, route.params]);
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigation.replace('Login');
+    } else {
+      setUserData(user);
+      setIsLoading(false);
+    }
+  }, [isLoggedIn, user, navigation]);
 
   const handleLogout = async () => {
     setIsLoading(true);
     try {
-      await AsyncStorage.removeItem('userSession');
+      await logout();
       navigation.replace('HomeTabs');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
+    } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !userData) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -45,14 +42,18 @@ const ProfileScreen = ({ navigation, route }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
-          <Image
-            source={{ uri: userData.profile_image }}
-            style={styles.avatar}
-          />
+          {userData.profile_image ? (
+            <Image
+              source={{ uri: userData.profile_image }}
+              style={styles.avatar}
+            />
+          ) : (
+            <Ionicons name="person-circle-outline" size={60} color="#888" />
+          )}
         </View>
         <View style={styles.headerText}>
-          <Text style={styles.name}>{`${userData.full_name} ${userData.last_name}`}</Text>
-          <Text style={styles.profession}>{userData.role}</Text>
+          <Text style={styles.name}>{`${userData.full_name || ''} ${userData.last_name || ''}`}</Text>
+          <Text style={styles.profession}>{userData.role || 'No role specified'}</Text>
         </View>
         <TouchableOpacity style={styles.editButton}>
           <Text style={styles.editButtonText}>Editar Perfil</Text>
@@ -69,31 +70,33 @@ const ProfileScreen = ({ navigation, route }) => {
       <View style={styles.infoItem}>
         <Ionicons name="happy-outline" size={24} color="#888" />
         <Text style={styles.infoLabel}>Nombre de Usuario</Text>
-        <Text style={styles.infoValue}>{userData.full_name}</Text>
+        <Text style={styles.infoValue}>{userData.full_name || 'No especificado'}</Text>
       </View>
 
       <View style={styles.infoItem}>
         <Ionicons name="mail-outline" size={24} color="#888" />
         <Text style={styles.infoLabel}>Correo</Text>
-        <Text style={styles.infoValue}>{userData.email}</Text>
+        <Text style={styles.infoValue}>{userData.email || 'No especificado'}</Text>
       </View>
 
       <View style={styles.infoItem}>
         <Ionicons name="call-outline" size={24} color="#888" />
         <Text style={styles.infoLabel}>Teléfono</Text>
-        <Text style={styles.infoValue}>{userData.phone_number}</Text>
+        <Text style={styles.infoValue}>{userData.phone_number || 'No especificado'}</Text>
       </View>
 
       <View style={styles.infoItem}>
         <Ionicons name="calendar-outline" size={24} color="#888" />
         <Text style={styles.infoLabel}>Fecha de Nacimiento</Text>
-        <Text style={styles.infoValue}>{new Date(userData.birth_date).toLocaleDateString()}</Text>
+        <Text style={styles.infoValue}>
+          {userData.birth_date ? new Date(userData.birth_date).toLocaleDateString() : 'No especificado'}
+        </Text>
       </View>
 
       <View style={styles.infoItem}>
         <Ionicons name="people-outline" size={24} color="#888" />
         <Text style={styles.infoLabel}>Género</Text>
-        <Text style={styles.infoValue}>{userData.gender}</Text>
+        <Text style={styles.infoValue}>{userData.gender || 'No especificado'}</Text>
       </View>
 
       <TouchableOpacity 
@@ -105,6 +108,7 @@ const ProfileScreen = ({ navigation, route }) => {
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

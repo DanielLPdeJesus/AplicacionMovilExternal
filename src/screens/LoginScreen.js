@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../context/AuthContext';
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [rememberPassword, setRememberPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const { login } = useAuth();
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -32,15 +33,14 @@ const LoginScreen = ({ navigation }) => {
             const data = await response.json();
 
             if (data.success) {
+                await login({
+                    id_token: data.id_token,
+                    user: data.user
+                });
 
-               await AsyncStorage.setItem('userSession', JSON.stringify({
-                id_token: data.id_token,
-                user: data.user
-            }));
-
-            Alert.alert('Éxito', data.message, [
-                { text: 'OK', onPress: () => navigation.navigate('HomeTabs') }
-            ]);
+                Alert.alert('Éxito', data.message, [
+                    { text: 'OK', onPress: () => navigation.navigate('HomeTabs') }
+                ]);
             } else {
                 Alert.alert('Error', data.message || 'Hubo un problema al iniciar sesión.');
             }

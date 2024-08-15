@@ -55,7 +55,7 @@ const BusinessCard = ({ business, navigation }) => (
       </TouchableOpacity>
       <TouchableOpacity 
         style={[styles.actionButton, styles.reserveButton]}
-        onPress={() => navigation.navigate('Reservation', { businessId: business.email })}
+        onPress={() => navigation.navigate('Reservation', { businessId: business.id })}
       >
         <Text style={[styles.actionButtonText, styles.reserveButtonText]}>Reservar</Text>
       </TouchableOpacity>

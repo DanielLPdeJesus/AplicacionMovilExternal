@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, StyleSheet, Alert } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useAuth } from '../context/AuthContext'; 
 
-// Configuración de la localización en español
 LocaleConfig.locales['es'] = {
   monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
   monthNamesShort: ['Ene.', 'Feb.', 'Mar', 'Abr', 'May', 'Jun', 'Jul.', 'Ago', 'Sept.', 'Oct.', 'Nov.', 'Dic.'],
@@ -14,7 +14,8 @@ LocaleConfig.locales['es'] = {
 };
 LocaleConfig.defaultLocale = 'es';
 
-const ReservationScreen = () => {
+const ReservationScreen = ({route, navigation }) => {
+  const { isLoggedIn} = useAuth();
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedService, setSelectedService] = useState('');
@@ -22,18 +23,25 @@ const ReservationScreen = () => {
   const [petition, setPetition] = useState('');
   const [comments, setComments] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const { businessId } = route.params;
 
   const times = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM'];
   const services = ['Masaje', 'Facial', 'Manicura'];
 
   useEffect(() => {
+    if (!isLoggedIn) {
+      Alert.alert('Acceso denegado', 'Debes iniciar sesión para hacer una reservación.', [
+        { text: 'OK', onPress: () => navigation.navigate('Login') }
+      ]);
+    }
+
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        alert('Se necesitan permisos para acceder a la galería de imágenes.');
+        Alert.alert('Se necesitan permisos para acceder a la galería de imágenes.');
       }
     })();
-  }, []);
+  }, [isLoggedIn, navigation]);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -41,21 +49,66 @@ const ReservationScreen = () => {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
+      base64: true,
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      setImage(result.assets[0].base64);
     }
   };
 
-  const handleReservation = () => {
-    console.log('Reservación realizada:', { selectedDate, selectedTime, selectedService, petition, comments, image });
+  const handleReservation = async () => {
+    if (!termsAccepted) {
+      Alert.alert('Error', 'Debes aceptar los términos y condiciones');
+      return;
+    }
+
+    const reservationData = {
+      businessId, 
+      selectedTime,
+      date: selectedDate,
+      serviceType: selectedService,
+      requestDetails: petition,
+      comments,
+      termsAccepted,
+      image: image ? `data:image/jpeg;base64,${image}` : null,
+
+    };
+
+    try {
+      const response = await fetch('https://jaydey.pythonanywhere.com/Authentication/api/reservation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reservationData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        Alert.alert('Éxito', data.message, [
+          { text: 'OK', onPress: () => navigation.navigate('Home') }
+        ]);
+      } else {
+        Alert.alert('Error', data.message || 'Hubo un problema al realizar la reservación');
+      }
+    } catch (error) {
+      console.error('Error al enviar la reservación:', error);
+      Alert.alert('Error', 'Hubo un problema al conectar con el servidor. Por favor, inténtalo de nuevo.');
+    }
   };
+
+  if (!isLoggedIn) {
+    return null;
+  }
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Ionicons name="arrow-back" size={24} color="white" />
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color="white" />
+        </TouchableOpacity>
         <TouchableOpacity>
           <Text style={styles.termsButton}>Términos y Condiciones</Text>
         </TouchableOpacity>
@@ -134,7 +187,7 @@ const ReservationScreen = () => {
       <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
         <Text style={styles.uploadButtonText}>Seleccionar Imagen</Text>
       </TouchableOpacity>
-      {image && <Image source={{ uri: image }} style={styles.uploadedImage} />}
+      {image && <Image source={{ uri: `data:image/jpeg;base64,${image}` }} style={styles.uploadedImage} />}
 
       <TextInput
         style={styles.commentsInput}
@@ -164,7 +217,7 @@ const ReservationScreen = () => {
       </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.cancelButton}>
+        <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
           <Text style={styles.cancelButtonText}>Cancelar</Text>
         </TouchableOpacity>
         <TouchableOpacity 
