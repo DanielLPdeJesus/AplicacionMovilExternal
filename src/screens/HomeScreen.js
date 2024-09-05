@@ -30,7 +30,7 @@ const BusinessRating = ({ business }) => {
 
 const NewBusinessBanner = ({ business }) => (
   <View style={styles.newBusinessBanner}>
-    <Image source={{ uri: business.profile_images[0] }} style={styles.newIcon} />
+    <Image source={{ uri: business.profile_image }} style={styles.newIcon} />
     <View style={styles.newBusinessInfo}>
       <Text style={styles.newBusinessName}>{business.business_name}</Text>
       <Text style={styles.newBusinessAddress}>{business.business_address}</Text>
@@ -61,16 +61,8 @@ const BusinessCard = ({ business, navigation }) => (
       </TouchableOpacity>
     </View>
     <View style={styles.userInfo}>
-    <Image source={{ uri: business.profile_images[0] }} style={styles.newIconInfo} />
+    <Image source={{ uri: business.profile_image }} style={styles.newIconInfo} />
       <Text style={styles.userName}>{business.owner_name}</Text>
-    </View>
-    <View style={styles.socialActions}>
-      <TouchableOpacity>
-        <Image source={require('../../assets/logo.png')} style={styles.socialIcon} />
-      </TouchableOpacity>
-      <TouchableOpacity>
-        <Image source={require('../../assets/logo.png')} style={styles.socialIcon} />
-      </TouchableOpacity>
     </View>
   </View>
 );
@@ -105,7 +97,6 @@ const HomeScreen = ({ navigation }) => {
       });
   };
 
-  
   const onRefresh = () => {
     fetchBusinesses();
   };
@@ -127,24 +118,24 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
      <FlatList
-  ListHeaderComponent={
-    <>
-      {newBusinesses.map((business, index) => (
-        <NewBusinessBanner key={index} business={business} />
-      ))}
-    </>
-  }
-  data={businesses}
-  renderItem={({ item }) => <BusinessCard business={item} navigation={navigation} />}
-  keyExtractor={(item) => item.email}
-  refreshControl={
-    <RefreshControl
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      colors={["#9Bd35A", "#689F38"]}
-    />
-  }
-/>
+        ListHeaderComponent={
+          <>
+            {newBusinesses.map((business, index) => (
+              <NewBusinessBanner key={index} business={business} />
+            ))}
+          </>
+        }
+        data={businesses}
+        renderItem={({ item }) => <BusinessCard business={item} navigation={navigation} />}
+        keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#9Bd35A", "#689F38"]}
+          />
+        }
+      />
     </View>
   );
 };
@@ -236,7 +227,7 @@ const styles = StyleSheet.create({
     color: 'gray',
   },
   businessCard: {
-    marginBottom: 20,
+    marginBottom: 10,
     borderRadius: 10,
     backgroundColor: '#fff',
     elevation: 3,
@@ -247,7 +238,7 @@ const styles = StyleSheet.create({
   },
   businessImage: {
     width: '100%',
-    height: 150,
+    height: 130,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
   },
@@ -269,7 +260,7 @@ const styles = StyleSheet.create({
   businessActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 10,
+    padding: 5,
   },
   actionButton: {
     padding: 5,

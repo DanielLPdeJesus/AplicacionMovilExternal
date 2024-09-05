@@ -77,7 +77,7 @@ const RegisterScreen = ({ navigation }) => {
       const imageBase64 = await convertImageToBase64(profileImage);
 
       console.log('Enviando solicitud al servidor...');
-      const response = await fetch('https://jaydey.pythonanywhere.com/Authentication/api/register', {
+      const response = await fetch('https://jaydey.pythonanywhere.com/ServicesMovil/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
