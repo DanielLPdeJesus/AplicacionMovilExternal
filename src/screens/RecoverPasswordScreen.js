@@ -7,7 +7,7 @@ const RecuperarContrasenaScreen = ({ navigation }) => {
 
   const handleRecuperarContrasena = async () => {
     try {
-      const response = await fetch('https://jaydey.pythonanywhere.com/Authentication/api/recuperar-password', {
+      const response = await fetch('https://jaydey.pythonanywhere.com/ServicesMovil/api/recuperar-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

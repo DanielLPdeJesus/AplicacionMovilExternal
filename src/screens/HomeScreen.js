@@ -30,10 +30,10 @@ const BusinessRating = ({ business }) => {
 
 const NewBusinessBanner = ({ business }) => (
   <View style={styles.newBusinessBanner}>
-    <Image source={{ uri: business.profile_image }} style={styles.newIcon} />
+    <Image source={{ uri: business.perfiles_imagenes }} style={styles.newIcon} />
     <View style={styles.newBusinessInfo}>
-      <Text style={styles.newBusinessName}>{business.business_name}</Text>
-      <Text style={styles.newBusinessAddress}>{business.business_address}</Text>
+      <Text style={styles.newBusinessName}>{business.nombre_negocio}</Text>
+      <Text style={styles.newBusinessAddress}>{business.direccion_negocio}</Text>
     </View>
   </View>
 );
@@ -41,16 +41,19 @@ const NewBusinessBanner = ({ business }) => (
 const BusinessCard = ({ business, navigation }) => (
   <View style={styles.businessCard}>
     <Image 
-      source={{ uri: business.business_images[0] }} 
+      source={{ uri: business.negocios_imagenes[0] }} 
       style={styles.businessImage} 
     />
-    <Text style={styles.businessName}>{business.business_name}</Text>
-    <Text style={styles.businessAddress}>{business.business_address}</Text>
+    <Text style={styles.businessName}>{business.nombre_negocio}</Text>
+    <Text style={styles.businessAddress}>{business.direccion_negocio}</Text>
     <View style={styles.userInfo}>
-    <BusinessRating business={business} />
+      <BusinessRating business={business} />
     </View>
     <View style={styles.businessActions}>
-      <TouchableOpacity style={styles.actionButton}>
+      <TouchableOpacity 
+        style={styles.actionButton}
+        onPress={() => navigation.navigate('ViewScreen', { businessId: business.id })}
+      >
         <Text style={styles.actionButtonText}>Ver mas</Text>
       </TouchableOpacity>
       <TouchableOpacity 
@@ -61,8 +64,8 @@ const BusinessCard = ({ business, navigation }) => (
       </TouchableOpacity>
     </View>
     <View style={styles.userInfo}>
-    <Image source={{ uri: business.profile_image }} style={styles.newIconInfo} />
-      <Text style={styles.userName}>{business.owner_name}</Text>
+      <Image source={{ uri: business.perfiles_imagenes }} style={styles.newIconInfo} />
+      <Text style={styles.userName}>{business.nombre_propietario}</Text>
     </View>
   </View>
 );
@@ -78,7 +81,7 @@ const HomeScreen = ({ navigation }) => {
 
   const fetchBusinesses = () => {
     setRefreshing(true);
-    fetch('https://jaydey.pythonanywhere.com/Services/api/businesses')
+    fetch('https://jaydey.pythonanywhere.com/ServicesMovil/api/businesses')
       .then(response => response.json())
       .then(data => {
         if (data.success) {

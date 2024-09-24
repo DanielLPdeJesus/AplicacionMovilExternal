@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
-import { format } from 'date-fns';
 
 const API_URL = 'https://jaydey.pythonanywhere.com/ServicesMovil'; 
 

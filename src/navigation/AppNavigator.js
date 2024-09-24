@@ -14,6 +14,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import RecoverPasswordScreen from '../screens/RecoverPasswordScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import ReservationScreen from '../screens/ReservationScreen';
+import ViewScreen from '../screens/ViewScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -94,6 +95,7 @@ const AppNavigator = () => {
           </>
         )}
         <Stack.Screen name="Reservation" component={ReservationScreen} options={{ title: 'Reservacion' }} />
+        <Stack.Screen name="ViewScreen" component={ViewScreen} options={{ title: 'Ver Mas' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
