@@ -15,7 +15,7 @@ const ViewScreen = ({ route, navigation }) => {
 
   const fetchBusinessDetails = async () => {
     try {
-      const response = await fetch(`https://jaydey.pythonanywhere.com/ServicesMovil/api/business/${businessId}`);
+      const response = await fetch(`https://www.jaydey.com/ServicesMovil/api/business/${businessId}`);
       const data = await response.json();
       if (data.success) {
         setBusiness(data.business);

@@ -93,7 +93,7 @@ const ReservationScreen = ({ route, navigation }) => {
     console.log('Datos de reservación a enviar:', reservationData);
 
     try {
-      const response = await fetch('https://jaydey.pythonanywhere.com/ServicesMovil/api/reservation', {
+      const response = await fetch('https://www.jaydey.com/ServicesMovil/api/reservation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

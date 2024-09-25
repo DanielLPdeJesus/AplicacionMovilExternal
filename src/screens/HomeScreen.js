@@ -81,7 +81,7 @@ const HomeScreen = ({ navigation }) => {
 
   const fetchBusinesses = () => {
     setRefreshing(true);
-    fetch('https://jaydey.pythonanywhere.com/ServicesMovil/api/businesses')
+    fetch('https://www.jaydey.com/ServicesMovil/api/businesses')
       .then(response => response.json())
       .then(data => {
         if (data.success) {

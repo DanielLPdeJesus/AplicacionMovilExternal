@@ -6,7 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 
-const API_URL = 'https://jaydey.pythonanywhere.com/ServicesMovil'; 
+const API_URL = 'https://www.jaydey.com/ServicesMovil'; 
 
 const ProfileScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
