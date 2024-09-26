@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
-    margin: 20
+    margin: 19
   },
   buttonText: {
     color: 'white',
