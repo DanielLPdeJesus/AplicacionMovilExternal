@@ -70,8 +70,8 @@ const RegisterScreen = ({ navigation }) => {
       <Text style={styles.label}>Sexo</Text>
       <RadioButton.Group onValueChange={setGender} value={gender}>
         <View style={styles.radioGroup}>
-          <RadioButton.Item label="Masculino" value="masculino" />
-          <RadioButton.Item label="Femenino" value="femenino" />
+          <RadioButton.Item label="M" value="masculino" />
+          <RadioButton.Item label="F" value="femenino" />
           <RadioButton.Item label="Otro" value="otro" />
         </View>
       </RadioButton.Group>
@@ -145,8 +145,8 @@ const styles = StyleSheet.create({
   },
   radioGroup: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
+    justifyContent: 'flex-start',
+    marginBottom: 20
   },
   passwordHint: {
     color: 'gray',
@@ -159,12 +159,13 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
-    margin: 20
+    margin: 25
   },
   buttonText: {
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+    
   },
 });
 

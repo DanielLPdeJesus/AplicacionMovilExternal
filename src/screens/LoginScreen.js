@@ -75,8 +75,9 @@ const LoginScreen = ({ navigation }) => {
       backgroundColor: 'white',
     },
     title: {
-      fontSize: 24,
+      fontSize: 28,
       fontWeight: 'bold',
+      color: '#333',
       marginBottom: 20,
     },
     logoContainer: {
@@ -84,23 +85,25 @@ const LoginScreen = ({ navigation }) => {
       marginBottom: 30,
     },
     logo: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
+      width: 120,
+      height: 120,
+      borderRadius: 60,
     },
     welcome: {
       marginTop: 10,
       textAlign: 'center',
-      color: 'gray',
+      color: '#666',
+      fontSize: 16,
     },
     input: {
       width: '100%',
       height: 50,
       borderWidth: 1,
-      borderColor: '#ddd',
-      borderRadius: 5,
-      paddingHorizontal: 10,
+      borderColor: '#ccc',
+      borderRadius: 8,
+      paddingHorizontal: 15,
       marginBottom: 15,
+      backgroundColor: '#fff',
     },
     checkboxContainer: {
       flexDirection: 'row',
@@ -108,23 +111,24 @@ const LoginScreen = ({ navigation }) => {
       marginBottom: 15,
     },
     checkbox: {
-      width: 20,
-      height: 20,
+      width: 24,
+      height: 24,
       borderWidth: 1,
-      borderColor: '#ddd',
-      borderRadius: 3,
+      borderColor: '#ccc',
+      borderRadius: 4,
       marginRight: 10,
       justifyContent: 'center',
       alignItems: 'center',
     },
     checkboxInner: {
-      width: 14,
-      height: 14,
-      backgroundColor: 'blue',
+      width: 16,
+      height: 16,
+      backgroundColor: '#007bff',
       borderRadius: 2,
     },
     checkboxLabel: {
-      color: 'gray',
+      color: '#666',
+      fontSize: 16,
     },
     button: {
       width: '100%',
@@ -132,18 +136,20 @@ const LoginScreen = ({ navigation }) => {
       backgroundColor: 'black',
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: 5,
+      borderRadius: 8,
       marginBottom: 15,
     },
     buttonText: {
       color: 'white',
-      fontSize: 16,
+      fontSize: 18,
       fontWeight: 'bold',
     },
     forgotPassword: {
-      color: 'blue',
+      color: '#007bff',
       textDecorationLine: 'underline',
+      marginBottom: 15,
     },
+
   });
 
   export default LoginScreen;
