@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+import PasswordInput from '../../components/forms/PasswordInput';
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
@@ -9,6 +10,11 @@ const LoginScreen = ({ navigation }) => {
     const [rememberPassword, setRememberPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth();
+
+
+    const handlePasswordChange = (newPassword) => {
+        setPassword(newPassword);
+    };
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -58,7 +64,7 @@ const LoginScreen = ({ navigation }) => {
 
             <View style={styles.logoContainer}>
                 <Image 
-                    source={require('../../assets/logodani.jpg')} 
+                    source={require('../../../assets/logo.png')} 
                     style={styles.logo} 
                 />
                 <Text style={styles.welcome}>
@@ -75,12 +81,9 @@ const LoginScreen = ({ navigation }) => {
                 autoCapitalize="none"
             />
 
-            <TextInput
-                style={styles.input}
-                placeholder="Ingresa tu contraseña"
+            <PasswordInput
                 value={password}
-                onChangeText={setPassword}
-                secureTextEntry
+                onChangeText={handlePasswordChange}
             />
 
             <View style={styles.checkboxContainer}>
@@ -150,6 +153,9 @@ const styles = StyleSheet.create({
       borderRadius: 5,
       paddingHorizontal: 10,
       marginBottom: 15,
+      borderColor: 'black',
+      backgroundColor: 'white',
+      
     },
     checkboxContainer: {
       flexDirection: 'row',

@@ -6,15 +6,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { View, Text, TouchableOpacity} from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
-import HomeScreen from '../screens/HomeScreen';
-import ReserScreen from '../screens/ReserScreen';
-import IaScreen from '../screens/IaScreen';
-import LoginScreen from '../screens/LoginScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-import RecoverPasswordScreen from '../screens/RecoverPasswordScreen';
-import RegisterScreen from '../screens/RegisterScreen';
-import ReservationScreen from '../screens/ReservationScreen';
-import ViewScreen from '../screens/ViewScreen';
+import HomeScreen from '../features/home/HomeScreen';
+import ReserScreen from '../features/reservation/ReservationInfoScreen';
+import IaScreen from '../features/hairstyle/IaScreen';
+import LoginScreen from '../features/auth/LoginScreen';
+import ProfileScreen from '../features/profile/ProfileScreen';
+import RecoverPasswordScreen from '../features/auth/RecoverPasswordScreen';
+import RegisterScreen from '../features/auth/RegisterScreen';
+import ReservationScreen from '../features/reservation/ReservationScreen';
+import ViewScreen from '../features/bussines/ViewBussinesScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();

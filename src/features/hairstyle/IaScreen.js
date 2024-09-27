@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 
 const stilos = [
-  { id: '1', name: 'Afro', description: '*Descripción', image: require('../../assets/logodani.jpg') },
-  { id: '2', name: 'Moicano', description: '*Descripción', image: require('../../assets/logodani.jpg') },
-  { id: '3', name: 'Pelon', description: '*Descripción', image: require('../../assets/logodani.jpg') },
-  { id: '4', name: 'Corte Militar', description: '*Descripción', image: require('../../assets/logodani.jpg') },
-  { id: '5', name: 'Rastas', description: '*Descripción', image: require('../../assets/logodani.jpg') },
+  { id: '1', name: 'Afro', description: '*Descripción', image: require('../../../assets/logodani.jpg') },
+  { id: '2', name: 'Moicano', description: '*Descripción', image: require('../../../assets/logodani.jpg') },
+  { id: '3', name: 'Pelon', description: '*Descripción', image: require('../../../assets/logodani.jpg') },
+  { id: '4', name: 'Corte Militar', description: '*Descripción', image: require('../../../assets/logodani.jpg') },
+  { id: '5', name: 'Rastas', description: '*Descripción', image: require('../../../assets/logodani.jpg') },
 ];
 
 const GaleriaEstilos = ({ navigation }) => {

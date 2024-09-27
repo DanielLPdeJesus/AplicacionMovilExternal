@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, StyleSheet,
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useAuth } from '../context/AuthContext'; 
+import { useAuth } from '../../context/AuthContext'; 
 
 LocaleConfig.locales['es'] = {
   monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],

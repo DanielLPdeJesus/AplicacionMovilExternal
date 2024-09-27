@@ -4,6 +4,7 @@ import { RadioButton } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 import * as ImagePicker from 'expo-image-picker';
+import PasswordInput from '../../components/forms/PasswordInput';
 
 const RegisterScreen = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
@@ -31,6 +32,9 @@ const RegisterScreen = ({ navigation }) => {
     })();
   }, []);
 
+  const handlePasswordChange = (newPassword) => {
+    setPassword(newPassword);
+};
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -219,13 +223,12 @@ const RegisterScreen = ({ navigation }) => {
       )}
 
       <Text style={styles.label}>Contraseña</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Ingrese su contraseña"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+
+      <PasswordInput
+                value={password}
+                onChangeText={handlePasswordChange}
+            />
+
       <Text style={styles.passwordHint}>Debe contener al menos 6 caracteres</Text>
 
       <Text style={styles.label}>Confirmar Contraseña</Text>

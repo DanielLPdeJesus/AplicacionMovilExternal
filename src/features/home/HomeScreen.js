@@ -108,15 +108,15 @@ const HomeScreen = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.categories}>
         <TouchableOpacity style={styles.categoryButton}>
-          <Image source={require('../../assets/manicurista.png')} style={styles.icon} />
+          <Image source={require('../../../assets/manicurista.png')} style={styles.icon} />
           <Text style={styles.textcat}>Manicuristas</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.categoryButton}>
-          <Image source={require('../../assets/maquillista2.png')} style={styles.icon} />
+          <Image source={require('../../../assets/maquillista2.png')} style={styles.icon} />
           <Text style={styles.textcat}>Maquillista</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.categoryButton}>
-          <Image source={require('../../assets/Estilista.png')} style={styles.icon} />
+          <Image source={require('../../../assets/Estilista.png')} style={styles.icon} />
           <Text style={styles.textcat}>Estilista</Text>
         </TouchableOpacity>
       </View>
