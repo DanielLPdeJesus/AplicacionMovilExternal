@@ -3,6 +3,8 @@ import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, Alert } fro
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../../context/AuthContext';
 import PasswordInput from '../../components/forms/PasswordInput';
+import EmailInput from '../../components/forms/EmailInput';
+import CustomAlert from '../../components/common/CustomAlert';
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
@@ -10,15 +12,25 @@ const LoginScreen = ({ navigation }) => {
     const [rememberPassword, setRememberPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth();
-
+    const [alertConfig, setAlertConfig] = useState({ isVisible: false, type: '', title: '', message: '', buttons: [] });
 
     const handlePasswordChange = (newPassword) => {
         setPassword(newPassword);
     };
 
+    const showAlert = (type, title, message, buttons) => {
+        setAlertConfig({ isVisible: true, type, title, message, buttons });
+    };
+
+    const hideAlert = () => {
+        setAlertConfig({ ...alertConfig, isVisible: false });
+    };
+
     const handleLogin = async () => {
         if (!email || !password) {
-            Alert.alert('Error', 'Por favor, ingresa tu correo electrónico y contraseña.');
+            showAlert('error', 'Error', 'Por favor, ingresa tu correo electrónico y contraseña.', [
+                { text: 'OK', onPress: hideAlert }
+            ]);
             return;
         }
 
@@ -44,15 +56,22 @@ const LoginScreen = ({ navigation }) => {
                     user: data.user
                 });
 
-                Alert.alert('Éxito', data.message, [
-                    { text: 'OK', onPress: () => navigation.navigate('HomeTabs') }
+                showAlert('success', 'Éxito', data.message, [
+                    { text: 'OK', onPress: () => {
+                        hideAlert();
+                        navigation.navigate('HomeTabs');
+                    }}
                 ]);
             } else {
-                Alert.alert('Error', data.message || 'Hubo un problema al iniciar sesión.');
+                showAlert('error', 'Error', data.message || 'Hubo un problema al iniciar sesión.', [
+                    { text: 'OK', onPress: hideAlert }
+                ]);
             }
         } catch (error) {
             console.error('Error durante el inicio de sesión:', error);
-            Alert.alert('Error', 'Hubo un problema al conectar con el servidor. Por favor, inténtalo de nuevo.');
+            showAlert('error', 'Error', 'Hubo un problema al conectar con el servidor. Por favor, inténtalo de nuevo.', [
+                { text: 'OK', onPress: hideAlert }
+            ]);
         } finally {
             setIsLoading(false);
         }
@@ -71,16 +90,11 @@ const LoginScreen = ({ navigation }) => {
                     Bienvenido a nuestra plataforma de inicio de sesión
                 </Text>
             </View>
-
-            <TextInput
-                style={styles.input}
-                placeholder="Ingresa tu correo electrónico"
+            <EmailInput
                 value={email}
                 onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
             />
-
+           
             <PasswordInput
                 value={password}
                 onChangeText={handlePasswordChange}
@@ -113,10 +127,18 @@ const LoginScreen = ({ navigation }) => {
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
                 <Text style={styles.registerText}>¿No tienes cuenta? Regístrate</Text>
             </TouchableOpacity>
+
+            <CustomAlert
+                isVisible={alertConfig.isVisible}
+                type={alertConfig.type}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onClose={hideAlert}
+            />
         </View>
     );
 };
-
 
 const styles = StyleSheet.create({
     container: {
@@ -144,18 +166,6 @@ const styles = StyleSheet.create({
       marginTop: 10,
       textAlign: 'center',
       color: 'gray',
-    },
-    input: {
-      width: '100%',
-      height: 50,
-      borderWidth: 1,
-      borderColor: '#ddd',
-      borderRadius: 5,
-      paddingHorizontal: 10,
-      marginBottom: 15,
-      borderColor: 'black',
-      backgroundColor: 'white',
-      
     },
     checkboxContainer: {
       flexDirection: 'row',

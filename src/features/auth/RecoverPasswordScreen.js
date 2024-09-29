@@ -1,13 +1,31 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import CustomAlert from '../../components/common/CustomAlert';
+import EmailInput from '../../components/forms/EmailInput';
 
 const RecuperarContrasenaScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
-  const [mensajeEnviado, setMensajeEnviado] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({ isVisible: false, type: '', title: '', message: '', buttons: [] });
+
+  const showAlert = (type, title, message, buttons) => {
+    setAlertConfig({ isVisible: true, type, title, message, buttons });
+  };
+
+  const hideAlert = () => {
+    setAlertConfig({ ...alertConfig, isVisible: false });
+  };
 
   const handleRecuperarContrasena = async () => {
+    if (!email) {
+      showAlert('error', 'Error', 'Por favor, ingrese su correo electrónico.', [{ text: 'OK', onPress: hideAlert }]);
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      const response = await fetch('https://wwww.jaydey.com/ServicesMovil/api/recuperar-password', {
+      const response = await fetch('https://www.jaydey.com/ServicesMovil/api/recuperar-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -18,96 +36,106 @@ const RecuperarContrasenaScreen = ({ navigation }) => {
       const data = await response.json();
 
       if (response.ok) {
-        setMensajeEnviado(true);
-        Alert.alert('Éxito', data.message);
+        showAlert('success', 'Éxito', data.message || 'Se ha enviado un correo de recuperación.', [
+          { text: 'OK', onPress: () => {
+            hideAlert();
+            navigation.navigate('Login');
+          }}
+        ]);
       } else {
-        Alert.alert('Error', data.error || 'Hubo un problema al procesar tu solicitud.');
+        throw new Error(data.error || 'Error en la solicitud');
       }
     } catch (error) {
-      console.error('Error:', error);
-      Alert.alert('Error', 'Hubo un problema de conexión. Por favor, intenta de nuevo.');
+      showAlert('error', 'Error', 'Hubo un problema al procesar tu solicitud. Por favor, intenta de nuevo más tarde.', [{ text: 'OK', onPress: hideAlert }]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Recuperar Contraseña</Text>
-      <Text style={styles.label}>Correo Electrónico</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Ingrese su correo electrónico"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-      />
-      <Text style={styles.helperText}>
-        Se le enviará un correo de recuperación
-      </Text>
-      {!mensajeEnviado ? (
-        <TouchableOpacity style={styles.button} onPress={handleRecuperarContrasena}>
-          <Text style={styles.buttonText}>Recuperar</Text>
-        </TouchableOpacity>
-      ) : (
-        <View>
-          <Text style={styles.mensajeEnviado}>Mensaje Enviado</Text>
-          <TouchableOpacity
-            style={[styles.button, styles.loginButton]}
-            onPress={() => navigation.navigate('Login')}
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
+      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        <View style={styles.formContainer}>
+          <Text style={styles.title}>Recuperar Contraseña</Text>
+          <Text style={styles.helperText}>
+            Ingresa tu correo electrónico para recibir instrucciones de recuperación.
+          </Text>
+          <EmailInput
+            value={email}
+            onChangeText={setEmail}
+            style={styles.input}
+          />
+          <TouchableOpacity 
+            style={[styles.button, isLoading && styles.buttonDisabled]} 
+            onPress={handleRecuperarContrasena}
+            disabled={isLoading}
           >
-            <Text style={styles.buttonText}>Volver al Login</Text>
+            <Text style={styles.buttonText}>
+              {isLoading ? 'Procesando...' : 'Recuperar Contraseña'}
+            </Text>
           </TouchableOpacity>
         </View>
-      )}
-    </View>
+      </ScrollView>
+      <CustomAlert
+        isVisible={alertConfig.isVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={hideAlert}
+      />
+    </KeyboardAvoidingView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)'
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    justifyContent: 'flex-start', 
+    padding: 20,
+  },
+  formContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 10,
+    padding: 20,
+    
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 8,
-    borderRadius: 5,
+    marginBottom: 20,
+    color: '#000000',
+    textAlign: 'center',
   },
   helperText: {
-    fontSize: 14,
-    color: 'gray',
-    marginBottom: 16,
+    fontSize: 16,
+    color: '#000000',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  input: {
+    marginBottom: 20,
   },
   button: {
-    backgroundColor: 'black',
-    padding: 12,
+    backgroundColor: '#000000',
+    padding: 15,
     borderRadius: 5,
     alignItems: 'center',
+  },
+  buttonDisabled: {
+    backgroundColor: '#a0a0a0',
   },
   buttonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  mensajeEnviado: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  loginButton: {
-    backgroundColor: 'black',
   },
 });
 
