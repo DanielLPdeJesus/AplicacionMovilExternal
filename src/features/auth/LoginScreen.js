@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import PasswordInput from '../../components/forms/PasswordInput';
 import EmailInput from '../../components/forms/EmailInput';
 import CustomAlert from '../../components/common/CustomAlert';
+import WelcomeComponent from '../../components/forms/WelcomComponent';
+
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
@@ -79,17 +81,8 @@ const LoginScreen = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Iniciar Sesión</Text>
 
-            <View style={styles.logoContainer}>
-                <Image 
-                    source={require('../../../assets/logo.png')} 
-                    style={styles.logo} 
-                />
-                <Text style={styles.welcome}>
-                    Bienvenido a nuestra plataforma de inicio de sesión
-                </Text>
-            </View>
+            <WelcomeComponent />
             <EmailInput
                 value={email}
                 onChangeText={setEmail}
@@ -125,7 +118,7 @@ const LoginScreen = ({ navigation }) => {
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.registerText}>¿No tienes cuenta? Regístrate</Text>
+                <Text style={styles.registerText}>¿No tienes cuenta? <Text style={styles.registerTextRegis}>Registrate</Text></Text>
             </TouchableOpacity>
 
             <CustomAlert
@@ -161,11 +154,6 @@ const styles = StyleSheet.create({
       width: 100,
       height: 100,
       borderRadius: 50,
-    },
-    welcome: {
-      marginTop: 10,
-      textAlign: 'center',
-      color: 'gray',
     },
     checkboxContainer: {
       flexDirection: 'row',
@@ -208,6 +196,7 @@ const styles = StyleSheet.create({
     forgotPassword: {
       color: 'blue',
       textDecorationLine: 'underline',
+      padding: 10,
     },
     buttonDisabled: {
       backgroundColor: 'gray',
@@ -218,6 +207,11 @@ const styles = StyleSheet.create({
       left: 20,
       padding: 10,
     },
+    registerTextRegis: {
+        fontWeight: 'bold',
+        padding: 20,
+
+    }
 });
 
 export default LoginScreen;

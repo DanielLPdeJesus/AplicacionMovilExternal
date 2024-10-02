@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Platform, Image } from 'react-native';
 import { RadioButton } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Toast from 'react-native-toast-message';
 import * as ImagePicker from 'expo-image-picker';
 import PasswordInput from '../../components/forms/PasswordInput';
+import EmailInput from '../../components/forms/EmailInput';
+import CustomAlert from '../../components/common/CustomAlert';
+import { Ionicons } from '@expo/vector-icons';
 
 const RegisterScreen = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
@@ -18,23 +20,28 @@ const RegisterScreen = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [alertConfig, setAlertConfig] = useState({
+    isVisible: false,
+    type: '',
+    title: '',
+    message: '',
+    buttons: []
+  });
 
   useEffect(() => {
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Toast.show({
-          type: 'error',
-          text1: 'Permiso denegado',
-          text2: 'Se necesitan permisos para acceder a la galería de imágenes.',
-        });
+        showAlert('error', 'Permiso denegado', 'Se necesitan permisos para acceder a la galería de imágenes.');
       }
     })();
   }, []);
 
   const handlePasswordChange = (newPassword) => {
     setPassword(newPassword);
-};
+  };
+
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -48,33 +55,82 @@ const RegisterScreen = ({ navigation }) => {
     }
   };
 
-  const handleRegister = async () => {
-    console.log('Iniciando registro...');
-    if (password !== confirmPassword) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Las contraseñas no coinciden',
-      });
-      return;
-    }
-    if (password.length < 6) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'La contraseña debe tener al menos 6 caracteres',
-      });
-      return;
-    }
-    if (!profileImage) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Por favor, selecciona una foto de perfil',
-      });
-      return;
+  const showAlert = (type, title, message, buttons = [{ text: 'OK', onPress: () => {} }]) => {
+    setAlertConfig({ isVisible: true, type, title, message, buttons });
+  };
+
+  const hideAlert = () => {
+    setAlertConfig({ ...alertConfig, isVisible: false });
+  };
+
+  const validateForm = () => {
+    let newErrors = {};
+
+    if (!fullName.trim()) {
+      newErrors.fullName = "El nombre es requerido";
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(fullName)) {
+      newErrors.fullName = "El nombre no debe contener números ni caracteres especiales";
     }
 
+    if (!lastName.trim()) {
+      newErrors.lastName = "El apellido es requerido";
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(lastName)) {
+      newErrors.lastName = "El apellido no debe contener números ni caracteres especiales";
+    }
+
+    if (!email) {
+      newErrors.email = "El correo electrónico es requerido";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "El correo electrónico no es válido";
+    }
+
+    if (!phone) {
+      newErrors.phone = "El número de teléfono es requerido";
+    } else if (!/^\d{10}$/.test(phone)) {
+      newErrors.phone = "El número de teléfono debe tener exactamente 10 dígitos";
+    }
+
+    if (!gender) {
+      newErrors.gender = "Por favor, selecciona un género";
+    }
+
+    const currentDate = new Date();
+    const age = currentDate.getFullYear() - birthDate.getFullYear();
+    const monthDiff = currentDate.getMonth() - birthDate.getMonth();
+    
+    if (birthDate > currentDate) {
+      newErrors.birthDate = "La fecha de nacimiento no puede ser en el futuro";
+    } else if (age > 90 || (age === 90 && monthDiff > 0)) {
+      newErrors.birthDate = "La edad no puede ser mayor a 90 años";
+    } else if (age < 13 || (age === 13 && monthDiff < 0)) {
+      newErrors.birthDate = "Debes tener al menos 13 años para registrarte";
+    }
+
+    if (!password) {
+      newErrors.password = "La contraseña es requerida";
+    } else if (password.length < 6) {
+      newErrors.password = "La contraseña debe tener al menos 6 caracteres";
+    }
+
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Las contraseñas no coinciden";
+    }
+
+    if (!profileImage) {
+      newErrors.profileImage = "Por favor, selecciona una foto de perfil";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleRegister = async () => {
+    console.log('Iniciando registro...');
+    if (!validateForm()) {
+      showAlert('error', 'Error de validación', 'Por favor, corrige los errores en el formulario.');
+      return;
+    }
+   
     setIsLoading(true);
 
     try {
@@ -103,26 +159,15 @@ const RegisterScreen = ({ navigation }) => {
       console.log('Datos de respuesta:', data);
 
       if (data.success) {
-        Toast.show({
-          type: 'success',
-          text1: 'Éxito',
-          text2: 'Registro exitoso. Se ha enviado un correo de verificación.',
-        });
-        navigation.navigate('Login');
+        showAlert('success', 'Éxito', 'Registro exitoso. Se ha enviado un correo de verificación.', [
+          { text: 'OK', onPress: () => navigation.navigate('Login') }
+        ]);
       } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: data.message || "Error durante el registro. Por favor, inténtalo de nuevo.",
-        });
+        showAlert('error', 'Error', data.message || "Error durante el registro. Por favor, inténtalo de nuevo.");
       }
     } catch (error) {
       console.error('Error al hacer la solicitud:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: "No se pudo conectar con el servidor. Por favor, inténtalo más tarde.",
-      });
+      showAlert('error', 'Error', "No se pudo conectar con el servidor. Por favor, inténtalo más tarde.");
     } finally {
       setIsLoading(false);
     }
@@ -151,15 +196,22 @@ const RegisterScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Registro de Usuario</Text>
-      
+      <View style={styles.header}>
+        <Text style={styles.title}>Crear Cuenta</Text>
+        <Text style={styles.subtitle}>Únete a nuestra comunidad</Text>
+      </View>
+
       <TouchableOpacity style={styles.imagePickerButton} onPress={pickImage}>
         {profileImage ? (
           <Image source={{ uri: profileImage }} style={styles.profileImage} />
         ) : (
-          <Text>Seleccionar foto de perfil*</Text>
+          <View style={styles.imagePlaceholder}>
+            <Ionicons name="camera-outline" size={40} color="#999" />
+            <Text style={styles.imagePlaceholderText}>Añadir foto</Text>
+          </View>
         )}
       </TouchableOpacity>
+      {errors.profileImage && <Text style={styles.errorText}>{errors.profileImage}</Text>}
 
       <Text style={styles.label}>Nombre Completo</Text>
       <TextInput
@@ -168,6 +220,7 @@ const RegisterScreen = ({ navigation }) => {
         value={fullName}
         onChangeText={setFullName}
       />
+      {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
 
       <Text style={styles.label}>Apellido</Text>
       <TextInput
@@ -176,15 +229,13 @@ const RegisterScreen = ({ navigation }) => {
         value={lastName}
         onChangeText={setLastName}
       />
+      {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
 
-      <Text style={styles.label}>Correo</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Ingrese su correo electrónico"
+      <EmailInput
         value={email}
         onChangeText={setEmail}
-        keyboardType="email-address"
       />
+      {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
       <Text style={styles.label}>Número de Teléfono</Text>
       <TextInput
@@ -194,6 +245,7 @@ const RegisterScreen = ({ navigation }) => {
         onChangeText={setPhone}
         keyboardType="phone-pad"
       />
+      {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
 
       <Text style={styles.label}>Sexo</Text>
       <RadioButton.Group onValueChange={setGender} value={gender}>
@@ -203,6 +255,7 @@ const RegisterScreen = ({ navigation }) => {
           <RadioButton.Item label="Otro" value="otro" />
         </View>
       </RadioButton.Group>
+      {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
 
       <Text style={styles.label}>Fecha de Cumpleaños</Text>
       <TouchableOpacity onPress={showDatePickerHandler}>
@@ -213,6 +266,7 @@ const RegisterScreen = ({ navigation }) => {
           editable={false}
         />
       </TouchableOpacity>
+      {errors.birthDate && <Text style={styles.errorText}>{errors.birthDate}</Text>}
       {showDatePicker && (
         <DateTimePicker
           value={birthDate}
@@ -223,12 +277,11 @@ const RegisterScreen = ({ navigation }) => {
       )}
 
       <Text style={styles.label}>Contraseña</Text>
-
       <PasswordInput
-                value={password}
-                onChangeText={handlePasswordChange}
-            />
-
+        value={password}
+        onChangeText={handlePasswordChange}
+      />
+      {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
       <Text style={styles.passwordHint}>Debe contener al menos 6 caracteres</Text>
 
       <Text style={styles.label}>Confirmar Contraseña</Text>
@@ -239,7 +292,10 @@ const RegisterScreen = ({ navigation }) => {
         onChangeText={setConfirmPassword}
         secureTextEntry
       />
+      {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+
       <Text style={styles.textregi}>Recuerda que al Registrarte aceptas automáticamente los términos y condiciones y el aviso de privacidad</Text>
+
       <TouchableOpacity 
         style={[styles.button, isLoading && styles.disabledButton]} 
         onPress={handleRegister}
@@ -249,6 +305,15 @@ const RegisterScreen = ({ navigation }) => {
           {isLoading ? 'Registrando...' : 'Registrarse'}
         </Text>
       </TouchableOpacity>
+
+      <CustomAlert
+        isVisible={alertConfig.isVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={hideAlert}
+      />
     </ScrollView>
   );
 };
@@ -259,11 +324,40 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: 'white',
   },
+  header: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
+    color: '#000',
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+  },
+  imagePickerButton: {
+    alignSelf: 'center',
+    marginBottom: 30,
+  },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
+  imagePlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePlaceholderText: {
+    marginTop: 5,
+    color: '#999',
   },
   label: {
     fontSize: 16,
@@ -305,24 +399,11 @@ const styles = StyleSheet.create({
   textregi: {
     textAlign: 'center',
   },
-  mandatoryField: {
-    marginTop: 10,
-    textAlign: 'center',
-    color: '#888',
-  },
-  imagePickerButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 150,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 100,
-    marginBottom: 20,
-  },
-  profileImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginTop: -15,
+    marginBottom: 10,
   },
 });
 
