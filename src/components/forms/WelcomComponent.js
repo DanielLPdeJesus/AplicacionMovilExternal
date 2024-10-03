@@ -18,28 +18,27 @@ const WelcomeComponent = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center',  
+    justifyContent: 'center',  
     padding: 35,
     backgroundColor: 'white',
   },
   image: {
-    width: 50,
-    height: 50,
-    marginRight: 10,
+    width: 100,  
+    height: 100,
+    marginBottom: 20,  
   },
   textContainer: {
-    flexDirection: 'column',
+    alignItems: 'center',  
   },
   mainText: {
-    textAlign: 'center',
     fontSize: 24,
     fontWeight: 'bold',
   },
   subText: {
     fontSize: 16,
     color: 'gray',
-    textAlign: 'center'
+    marginTop: 10,  
   },
 });
 

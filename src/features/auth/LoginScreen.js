@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     checkboxInner: {
       width: 14,
       height: 14,
-      backgroundColor: 'blue',
+      backgroundColor: 'black',
       borderRadius: 2,
     },
     checkboxLabel: {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, RefreshControl} from 'react-native';
-import { FontAwesome } from '@expo/vector-icons'
+import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, RefreshControl, TextInput } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 
 const BusinessRating = ({ business }) => {
   const renderStars = () => {
@@ -74,6 +74,9 @@ const HomeScreen = ({ navigation }) => {
   const [businesses, setBusinesses] = useState([]);
   const [newBusinesses, setNewBusinesses] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState('Todos');
 
   useEffect(() => {
     fetchBusinesses();
@@ -104,31 +107,84 @@ const HomeScreen = ({ navigation }) => {
     fetchBusinesses();
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.categories}>
-        <TouchableOpacity style={styles.categoryButton}>
-          <Image source={require('../../../assets/manicurista.png')} style={styles.icon} />
-          <Text style={styles.textcat}>Manicuristas</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.categoryButton}>
-          <Image source={require('../../../assets/maquillista2.png')} style={styles.icon} />
-          <Text style={styles.textcat}>Maquillista</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.categoryButton}>
-          <Image source={require('../../../assets/Estilista.png')} style={styles.icon} />
-          <Text style={styles.textcat}>Estilista</Text>
+  const renderEmptyState = () => (
+    <View style={styles.emptyStateContainer}>
+      <Image 
+        source={require('../../../assets/notfout.jpg')} 
+        style={styles.emptyStateImage} 
+      />
+      <Text style={styles.emptyStateText}>No se encontraron negocios</Text>
+    </View>
+  );
+
+  const filteredBusinesses = businesses.filter(business => {
+    const matchesSearch = business.nombre_negocio.toLowerCase().includes(searchQuery.toLowerCase());
+    let matchesFilter = false;
+    
+    if (selectedFilter === 'Todos') {
+      matchesFilter = true;
+    } else if (selectedFilter === 'Salones') {
+      matchesFilter = !['Estetica', 'Peluqueria'].includes(business.servicios_ofrecidos);
+    } else {
+      matchesFilter = business.servicios_ofrecidos === selectedFilter;
+    }
+    
+    return matchesSearch && matchesFilter;
+  });
+
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <View style={styles.searchContainer}>
+        <FontAwesome name="search" size={20} color="#888" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar negocios..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        <TouchableOpacity style={styles.filterButton} onPress={() => setIsFilterOpen(!isFilterOpen)}>
+          <FontAwesome name="sliders" size={20} color="#000" />
         </TouchableOpacity>
       </View>
-     <FlatList
+      {isFilterOpen && (
+        <View style={styles.filterOptionsContainer}>
+          <Text style={styles.filterTitle}>Filtrar por tipo de servicio:</Text>
+          <View style={styles.filterOptions}>
+            {['Todos', 'Estetica', 'Peluqueria', 'Salones'].map((filter) => (
+              <TouchableOpacity
+                key={filter}
+                style={[
+                  styles.filterOption,
+                  selectedFilter === filter && styles.selectedFilter
+                ]}
+                onPress={() => setSelectedFilter(filter)}
+              >
+                <Text style={[
+                  styles.filterText,
+                  selectedFilter === filter && styles.selectedFilterText
+                ]}>
+                  {filter}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <FlatList
         ListHeaderComponent={
           <>
+            {renderHeader()}
             {newBusinesses.map((business, index) => (
               <NewBusinessBanner key={index} business={business} />
             ))}
           </>
         }
-        data={businesses}
+        data={filteredBusinesses}
         renderItem={({ item }) => <BusinessCard business={item} navigation={navigation} />}
         keyExtractor={(item) => item.id}
         refreshControl={
@@ -138,6 +194,8 @@ const HomeScreen = ({ navigation }) => {
             colors={["#9Bd35A", "#689F38"]}
           />
         }
+        ListEmptyComponent={renderEmptyState}
+        contentContainerStyle={filteredBusinesses.length === 0 ? styles.emptyListContent : null}
       />
     </View>
   );
@@ -149,60 +207,60 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 15
   },
-  headerinfo: {
+  header: {
+    marginBottom: 15,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+  },
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-  },
-  avatarContainerinfo: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#ccc',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarinfo: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  headerTextinfo: {
-    marginLeft: 15,
-    flex: 1,
-  },
-  nameinfo: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  professioninfo: {
-    fontSize: 14,
-    color: '#888',
-  },
-  editButtoninfo: {
     backgroundColor: '#f0f0f0',
-    padding: 8,
-    borderRadius: 5,
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    marginBottom: 10,
   },
-  editButtonTextinfo: {
-    fontSize: 12,
+  searchIcon: {
+    marginRight: 10,
   },
-  categories: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 2,
-    marginBottom: 5,
-  },
-  categoryButton: {
-    alignItems: 'center',
-  },
-  icon: {
-    width: 15,
-    height: 15,
-    marginBottom: 5,
-  },
-  textcat: {
+  searchInput: {
+    flex: 1,
+    height: 40,
     fontSize: 16,
+  },
+  filterButton: {
+    padding: 10,
+  },
+  filterOptionsContainer: {
+    marginTop: 10,
+  },
+  filterTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  filterOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+  },
+  filterOption: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    marginRight: 10,
+    marginBottom: 10,
+  },
+  selectedFilter: {
+    backgroundColor: '#007AFF',
+  },
+  filterText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  selectedFilterText: {
+    color: '#fff',
   },
   newBusinessBanner: {
     flexDirection: 'row',
@@ -255,11 +313,6 @@ const styles = StyleSheet.create({
     color: 'gray',
     paddingHorizontal: 10,
   },
-  businessServices: {
-    fontSize: 14,
-    paddingHorizontal: 10,
-    marginTop: 5,
-  },
   businessActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -285,36 +338,42 @@ const styles = StyleSheet.create({
   },
   userInfo: {
     padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   newIconInfo: {
     width: 24,
     height: 24,
-    marginLeft :10,
+    marginRight: 10,
     borderRadius: 100
   },
   userName: {
     fontSize: 14,
     fontWeight: 'bold',
-    padding: 10,
-  },
-  socialActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    padding: 10,
-  },
-  socialIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 15,
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 5,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyStateImage: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    color: '#888',
+    textAlign: 'center',
+  },
+  emptyListContent: {
+    flexGrow: 1,
   },
 });
 
