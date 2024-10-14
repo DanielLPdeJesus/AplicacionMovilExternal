@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../context/AuthContext';
 import PasswordInput from '../../components/forms/PasswordInput';
 import EmailInput from '../../components/forms/EmailInput';
 import CustomAlert from '../../components/common/CustomAlert';
 import WelcomeComponent from '../../components/forms/WelcomComponent';
-
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
@@ -15,6 +15,24 @@ const LoginScreen = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth();
     const [alertConfig, setAlertConfig] = useState({ isVisible: false, type: '', title: '', message: '', buttons: [] });
+
+    useEffect(() => {
+        loadSavedCredentials();
+    }, []);
+
+    const loadSavedCredentials = async () => {
+        try {
+            const savedEmail = await AsyncStorage.getItem('savedEmail');
+            const savedPassword = await AsyncStorage.getItem('savedPassword');
+            if (savedEmail && savedPassword) {
+                setEmail(savedEmail);
+                setPassword(savedPassword);
+                setRememberPassword(true);
+            }
+        } catch (error) {
+            console.error('Error al cargar las credenciales guardadas:', error);
+        }
+    };
 
     const handlePasswordChange = (newPassword) => {
         setPassword(newPassword);
@@ -26,6 +44,20 @@ const LoginScreen = ({ navigation }) => {
 
     const hideAlert = () => {
         setAlertConfig({ ...alertConfig, isVisible: false });
+    };
+
+    const saveCredentials = async () => {
+        try {
+            if (rememberPassword) {
+                await AsyncStorage.setItem('savedEmail', email);
+                await AsyncStorage.setItem('savedPassword', password);
+            } else {
+                await AsyncStorage.removeItem('savedEmail');
+                await AsyncStorage.removeItem('savedPassword');
+            }
+        } catch (error) {
+            console.error('Error al guardar las credenciales:', error);
+        }
     };
 
     const handleLogin = async () => {
@@ -53,17 +85,12 @@ const LoginScreen = ({ navigation }) => {
             const data = await response.json();
 
             if (data.success) {
+                await saveCredentials();
                 await login({
                     id_token: data.id_token,
                     user: data.user
                 });
-
-                showAlert('success', 'Éxito', data.message, [
-                    { text: 'OK', onPress: () => {
-                        hideAlert();
-                        navigation.navigate('HomeTabs');
-                    }}
-                ]);
+                navigation.navigate('HomeTabs');
             } else {
                 showAlert('error', 'Error', data.message || 'Hubo un problema al iniciar sesión.', [
                     { text: 'OK', onPress: hideAlert }
@@ -81,7 +108,6 @@ const LoginScreen = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-
             <WelcomeComponent />
             <EmailInput
                 value={email}
@@ -132,6 +158,7 @@ const LoginScreen = ({ navigation }) => {
         </View>
     );
 };
+
 
 const styles = StyleSheet.create({
     container: {

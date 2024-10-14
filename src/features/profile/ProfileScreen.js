@@ -28,7 +28,10 @@ const ProfileScreen = ({ navigation }) => {
 
   useEffect(() => {
     if (!isLoggedIn) {
-      navigation.replace('Login');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
     } else {
       setUserData(user);
       setEditedUser(user);
@@ -37,16 +40,18 @@ const ProfileScreen = ({ navigation }) => {
   }, [isLoggedIn, user, navigation]);
 
   const handleLogout = async () => {
-    setIsLoading(true);
     try {
       await logout();
-      navigation.replace('HomeTabs');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'HomeTabs' }], // Asegúrate de que 'Home' sea el nombre correcto de tu pantalla de inicio
+      });
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
-    } finally {
-      setIsLoading(false);
+      showAlert('error', 'Error', 'No se pudo cerrar la sesión. Por favor, inténtalo de nuevo.');
     }
   };
+
 
   const handleEdit = () => {
     setIsEditing(true);

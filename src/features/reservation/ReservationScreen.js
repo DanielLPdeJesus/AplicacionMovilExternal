@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, StyleSheet } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext'; 
+import CustomAlert from '../../components/common/CustomAlert';
 
 LocaleConfig.locales['es'] = {
   monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
@@ -25,26 +26,42 @@ const ReservationScreen = ({ route, navigation }) => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { businessId } = route.params;
+  const [alertConfig, setAlertConfig] = useState({ isVisible: false, type: '', title: '', message: '', buttons: [] });
 
   const times = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM'];
   const services = ['Masaje', 'Facial', 'Manicura'];
 
   useEffect(() => {
-    if (!isLoggedIn || !user) {
-      Alert.alert('Acceso denegado', 'Debes iniciar sesión para hacer una reservación.', [
-        { text: 'OK', onPress: () => navigation.navigate('Login') }
-      ]);
-    }
+    checkLoginStatus();
     
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Se necesitan permisos para acceder a la galería de imágenes.');
+        showAlert('error', 'Permisos requeridos', 'Se necesitan permisos para acceder a la galería de imágenes.', [
+          { text: 'OK', onPress: hideAlert }
+        ]);
       }
     })();
 
     console.log('Estado de autenticación:', { isLoggedIn, user });
   }, [isLoggedIn, user, navigation]);
+
+  const checkLoginStatus = () => {
+    if (!isLoggedIn || !user) {
+      showAlert('error', 'Acceso denegado', 'Debes iniciar sesión para hacer una reservación.', [
+        { text: 'Iniciar sesión', onPress: () => navigation.replace('Login') },
+        { text: 'Cancelar', onPress: () => navigation.goBack() }
+      ]);
+    }
+  };
+
+  const showAlert = (type, title, message, buttons) => {
+    setAlertConfig({ isVisible: true, type, title, message, buttons });
+  };
+
+  const hideAlert = () => {
+    setAlertConfig({ ...alertConfig, isVisible: false });
+  };
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -62,17 +79,21 @@ const ReservationScreen = ({ route, navigation }) => {
 
   const handleReservation = async () => {
     if (!isLoggedIn || !user) {
-      Alert.alert('Error', 'Debes iniciar sesión para hacer una reservación.');
+      checkLoginStatus();
       return;
     }
 
     if (!termsAccepted) {
-      Alert.alert('Error', 'Debes aceptar los términos y condiciones');
+      showAlert('error', 'Error', 'Debes aceptar los términos y condiciones', [
+        { text: 'OK', onPress: hideAlert }
+      ]);
       return;
     }
 
     if (!selectedDate || !selectedTime || !selectedService) {
-      Alert.alert('Error', 'Por favor, completa todos los campos requeridos.');
+      showAlert('error', 'Error', 'Por favor, completa todos los campos requeridos.', [
+        { text: 'OK', onPress: hideAlert }
+      ]);
       return;
     }
 
@@ -105,29 +126,47 @@ const ReservationScreen = ({ route, navigation }) => {
       console.log('Respuesta del servidor:', data);
 
       if (data.success) {
-        Alert.alert('Éxito', data.message, [
-          { text: 'OK', onPress: () => navigation.navigate('HomeTabs') }
+        showAlert('success', 'Éxito', data.message, [
+          { text: 'OK', onPress: () => {
+            hideAlert();
+            navigation.navigate('HomeTabs');
+          }}
         ]);
       } else {
-        Alert.alert('Error', data.message || 'Hubo un problema al realizar la reservación');
+        showAlert('error', 'Error', data.message || 'Hubo un problema al realizar la reservación', [
+          { text: 'OK', onPress: hideAlert }
+        ]);
       }
     } catch (error) {
       console.error('Error al enviar la reservación:', error);
-      Alert.alert('Error', 'Hubo un problema al conectar con el servidor. Por favor, inténtalo de nuevo.');
+      showAlert('error', 'Error', 'Hubo un problema al conectar con el servidor. Por favor, inténtalo de nuevo.', [
+        { text: 'OK', onPress: hideAlert }
+      ]);
     } finally {
       setIsLoading(false);
     }
   };
 
   if (!isLoggedIn || !user) {
-    return null;
+    return (
+      <View style={styles.container}>
+        <CustomAlert
+          isVisible={alertConfig.isVisible}
+          type={alertConfig.type}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          buttons={alertConfig.buttons}
+          onClose={hideAlert}
+        />
+      </View>
+    );
   }
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="white" />
+          <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <TouchableOpacity>
           <Text style={styles.termsButton}>Términos y Condiciones</Text>
@@ -254,6 +293,16 @@ const ReservationScreen = ({ route, navigation }) => {
           </Text>
         </TouchableOpacity>
       </View>
+
+
+      <CustomAlert
+        isVisible={alertConfig.isVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={hideAlert}
+      />
     </ScrollView>
   );
 };
