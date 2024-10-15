@@ -81,7 +81,7 @@ const AppNavigator = () => {
           </>
         )}
         <Stack.Screen name="Reservation" component={ReservationScreen} options={{ title: 'Reservación' }} />
-        <Stack.Screen name="ViewScreen" component={ViewBussinesScreen} options={{ title: 'Ver Negocio' }} />
+        <Stack.Screen name="ViewBussinesScreen" component={ViewBussinesScreen} options={{ title: 'Ver Negocio' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

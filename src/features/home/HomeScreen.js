@@ -52,7 +52,7 @@ const BusinessCard = ({ business, navigation }) => (
     <View style={styles.businessActions}>
       <TouchableOpacity 
         style={styles.actionButton}
-        onPress={() => navigation.navigate('ViewScreen', { businessId: business.id })}
+        onPress={() => navigation.navigate('ViewBussinesScreen', { businessId: business.id })}
       >
         <Text style={styles.actionButtonText}>Ver mas</Text>
       </TouchableOpacity>

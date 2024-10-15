@@ -83,7 +83,22 @@ const ServiceImages = ({ images }) => {
   );
 };
 
-const ViewScreen = ({ route, navigation }) => {
+const PromotionItem = ({ promotion }) => {
+  const startDate = new Date(promotion.fecha_inicio);
+  const endDate = new Date(promotion.fecha_fin);
+
+  return (
+    <View style={styles.promotionItem}>
+      <Text style={styles.promotionTitle}>{promotion.descripcion}</Text>
+      <Text style={styles.promotionDiscount}>{promotion.porcentaje_descuento}% de descuento</Text>
+      <Text style={styles.promotionDates}>
+        Desde: {startDate.toLocaleString()} - Hasta: {endDate.toLocaleString()}
+      </Text>
+    </View>
+  );
+};
+
+const ViewBussinesScreen = ({ route, navigation }) => {
   const { businessId } = route.params;
   const [business, setBusiness] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -185,11 +200,6 @@ const ViewScreen = ({ route, navigation }) => {
               <Text style={styles.statLabel}>Me gusta</Text>
             </View>
             <View style={styles.statItem}>
-              <Ionicons name="heart-dislike" size={24} color="#FF4500" />
-              <Text style={styles.statValue}>{business.numero_gustas}</Text>
-              <Text style={styles.statLabel}>No me gustas</Text>
-            </View>
-            <View style={styles.statItem}>
               <Ionicons name="chatbubble" size={24} color="#4169E1" />
               <Text style={styles.statValue}>{business.numero_resenas}</Text>
               <Text style={styles.statLabel}>Reseñas</Text>
@@ -202,6 +212,19 @@ const ViewScreen = ({ route, navigation }) => {
             <Text style={styles.sectionTitle}>Servicios Ofrecidos</Text>
             {business.services_offered && business.services_offered.length > 0 && (
               <ServiceImages images={business.services_offered} />
+            )}
+          </View>
+        );
+      case 'promotions':
+        return (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Promociones</Text>
+            {business.promotions && business.promotions.length > 0 ? (
+              business.promotions.map((promotion, index) => (
+                <PromotionItem key={index} promotion={promotion} />
+              ))
+            ) : (
+              <Text style={styles.noPromotionsText}>No hay promociones disponibles. Habrá próximamente.</Text>
             )}
           </View>
         );
@@ -281,6 +304,7 @@ const ViewScreen = ({ route, navigation }) => {
     { type: 'header' },
     { type: 'stats' },
     { type: 'services' },
+    { type: 'promotions' },
     { type: 'contact' },
     { type: 'reviews' },
     { type: 'location' },
@@ -296,6 +320,8 @@ const ViewScreen = ({ route, navigation }) => {
     />
   );
 };
+
+export default ViewBussinesScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -442,7 +468,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   carouselImage: {
-    width,
+    width: Dimensions.get('window').width,
     resizeMode: 'cover',
   },
   serviceImagesWrapper: {
@@ -480,6 +506,29 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 1,
   },
+  promotionItem: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 10,
+  },
+  promotionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  promotionDiscount: {
+    fontSize: 14,
+    color: '#007AFF',
+    marginBottom: 5,
+  },
+  promotionDates: {
+    fontSize: 12,
+    color: '#666',
+  },
+  noPromotionsText: {
+    fontStyle: 'italic',
+    textAlign: 'center',
+    color: '#666',
+  },
 });
-
-export default ViewScreen;
