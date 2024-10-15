@@ -145,6 +145,12 @@ const ViewBussinesScreen = ({ route, navigation }) => {
     }
   };
 
+  const calculateRating = (likes, dislikes) => {
+    const total = likes + dislikes;
+    if (total === 0) return 0;
+    return ((likes / total) * 5).toFixed(1);
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -186,22 +192,31 @@ const ViewBussinesScreen = ({ route, navigation }) => {
             </View>
           </View>
         );
-      case 'stats':
+        case 'stats':
+          const rating = calculateRating(
+            business.numero_gustas || 0, 
+            business.no_me_gustas || 0
+          );
         return (
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Ionicons name="star" size={24} color="#FFD700" />
-              <Text style={styles.statValue}>{business.calificacion_promedio.toFixed(1)}</Text>
+              <Text style={styles.statValue}>{rating}</Text>
               <Text style={styles.statLabel}>Calificación</Text>
             </View>
             <View style={styles.statItem}>
               <Ionicons name="heart" size={24} color="#FF4500" />
-              <Text style={styles.statValue}>{business.numero_gustas}</Text>
+              <Text style={styles.statValue}>{business.numero_gustas || 0}</Text>
               <Text style={styles.statLabel}>Me gusta</Text>
             </View>
             <View style={styles.statItem}>
+              <Ionicons name="heart-dislike" size={24} color="#FF4500" />
+              <Text style={styles.statValue}>{business.no_me_gustas || 0}</Text>
+              <Text style={styles.statLabel}>No me gusta</Text>
+            </View>
+            <View style={styles.statItem}>
               <Ionicons name="chatbubble" size={24} color="#4169E1" />
-              <Text style={styles.statValue}>{business.numero_resenas}</Text>
+              <Text style={styles.statValue}>{business.numero_resenas || 0}</Text>
               <Text style={styles.statLabel}>Reseñas</Text>
             </View>
           </View>
@@ -322,6 +337,7 @@ const ViewBussinesScreen = ({ route, navigation }) => {
 };
 
 export default ViewBussinesScreen;
+
 
 const styles = StyleSheet.create({
   container: {
