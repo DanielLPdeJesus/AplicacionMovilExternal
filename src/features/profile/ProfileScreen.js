@@ -1,0 +1,517 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, ScrollView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../context/AuthContext';
+import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
+import CustomAlert from '../../components/common/CustomAlert';
+
+const API_URL = 'https://www.jaydey.com/ServicesMovil'; 
+
+const ProfileScreen = ({ navigation }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedUser, setEditedUser] = useState({});
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const { isLoggedIn, user, logout } = useAuth();
+  const [alertConfig, setAlertConfig] = useState({
+    isVisible: false,
+    type: '',
+    title: '',
+    message: '',
+    buttons: []
+  });
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    } else {
+      setUserData(user);
+      setEditedUser(user);
+      setIsLoading(false);
+    }
+  }, [isLoggedIn, user, navigation]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'HomeTabs' }], // Asegúrate de que 'Home' sea el nombre correcto de tu pantalla de inicio
+      });
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      showAlert('error', 'Error', 'No se pudo cerrar la sesión. Por favor, inténtalo de nuevo.');
+    }
+  };
+
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const showAlert = (type, title, message, buttons = [{ text: 'OK', onPress: () => {} }]) => {
+    setAlertConfig({ isVisible: true, type, title, message, buttons });
+  };
+
+  const hideAlert = () => {
+    setAlertConfig({ ...alertConfig, isVisible: false });
+  };
+
+  const validateForm = () => {
+    let newErrors = {};
+  
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    if (!editedUser.full_name) {
+      newErrors.full_name = "El nombre es requerido";
+    } else if (!nameRegex.test(editedUser.full_name)) {
+      newErrors.full_name = "El nombre no debe contener números ni caracteres especiales";
+    }
+  
+    if (!editedUser.last_name) {
+      newErrors.last_name = "El apellido es requerido";
+    } else if (!nameRegex.test(editedUser.last_name)) {
+      newErrors.last_name = "El apellido no debe contener números ni caracteres especiales";
+    }
+  
+    if (!editedUser.email) {
+      newErrors.email = "El correo electrónico es requerido";
+    } else if (!/\S+@\S+\.\S+/.test(editedUser.email)) {
+      newErrors.email = "El correo electrónico no es válido";
+    }
+  
+    if (editedUser.phone_number && !/^\d{10}$/.test(editedUser.phone_number)) {
+      newErrors.phone_number = "El número de teléfono debe tener exactamente 10 dígitos";
+    }
+  
+    if (!editedUser.birth_date) {
+      newErrors.birth_date = "La fecha de nacimiento es requerida";
+    } else {
+      const currentDate = new Date();
+      const selectedDate = new Date(editedUser.birth_date);
+      const age = currentDate.getFullYear() - selectedDate.getFullYear();
+      const monthDiff = currentDate.getMonth() - selectedDate.getMonth();
+      
+      if (selectedDate > currentDate) {
+        newErrors.birth_date = "La fecha de nacimiento no puede ser en el futuro";
+      } else if (age > 90 || (age === 90 && monthDiff > 0)) {
+        newErrors.birth_date = "La edad no puede ser mayor a 90 años";
+      } else if (age < 13 || (age === 13 && monthDiff < 0)) {
+        newErrors.birth_date = "Debes tener al menos 13 años para registrarte";
+      }
+    }
+  
+    if (!editedUser.gender) {
+      newErrors.gender = "El género es requerido";
+    }
+  
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      showAlert('error', 'Error de validación', 'Por favor, corrija los errores en el formulario.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/update-profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userData.uid,
+          ...editedUser
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setUserData(editedUser);
+        setIsEditing(false);
+        showAlert('success', 'Éxito', 'Perfil actualizado correctamente');
+      } else {
+        showAlert('error', 'Error', data.message || 'No se pudo actualizar el perfil');
+      }
+    } catch (error) {
+      console.error('Error al actualizar el perfil:', error);
+      showAlert('error', 'Error', 'Ocurrió un error al actualizar el perfil');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedUser(userData);
+    setIsEditing(false);
+    setErrors({});
+  };
+
+  const handleChangeProfileImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      showAlert('error', 'Permiso requerido', 'Necesitamos permiso para acceder a tu galería');
+      return;
+    }
+  
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+  
+    if (!result.canceled) {
+      setIsLoading(true);
+      try {
+        const formData = new FormData();
+        formData.append('userId', userData.uid);
+        formData.append('profileImage', {
+          uri: Platform.OS === 'ios' ? result.assets[0].uri.replace('file://', '') : result.assets[0].uri,
+          type: 'image/jpeg',
+          name: 'profile_image.jpg'
+        });
+  
+        const response = await fetch(`${API_URL}/api/update-profile-image`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          body: formData,
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.profile_image_url) {
+          const updatedUser = { ...userData, profile_image: data.profile_image_url };
+          setUserData(updatedUser);
+          setEditedUser(updatedUser);
+          showAlert('success', 'Éxito', 'Imagen de perfil actualizada correctamente');
+        } else {
+          throw new Error(data.message || 'No se pudo actualizar la imagen de perfil');
+        }
+      } catch (error) {
+        console.error('Error al actualizar la imagen de perfil:', error);
+        showAlert('error', 'Error', error.message || 'Ocurrió un error al actualizar la imagen de perfil');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setEditedUser({...editedUser, birth_date: selectedDate.toISOString().split('T')[0]});
+    }
+  };
+
+  if (isLoading || !userData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#333" />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.headerBar}>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+          <Ionicons name="log-out-outline" size={24} color="#333" />
+        </TouchableOpacity>
+      </View>
+      <ScrollView>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.avatarContainer} onPress={handleChangeProfileImage}>
+            {userData.profile_image ? (
+              <Image
+                source={{ uri: userData.profile_image }}
+                style={styles.avatar}
+              />
+            ) : (
+              <Ionicons name="person-circle-outline" size={80} color="#ffd1dc" />
+            )}
+            <View style={styles.changePhotoButton}>
+              <Ionicons name="camera" size={20} color="#fff" />
+            </View>
+          </TouchableOpacity>
+          <Text style={styles.name}>{`${userData.full_name || ''} ${userData.last_name || ''}`}</Text>
+          <Text style={styles.profession}>{userData.role || 'Cliente'}</Text>
+          {!isEditing ? (
+            <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+              <Text style={styles.editButtonText}>Editar Perfil</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.editActions}>
+              <TouchableOpacity style={styles.actionButton} onPress={handleSave}>
+                <Ionicons name="checkmark" size={24} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.actionButton, styles.cancelButton]} onPress={handleCancel}>
+                <Ionicons name="close" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.infoSection}>
+          {isEditing ? (
+            <>
+              <View style={styles.infoItem}>
+                <Ionicons name="person-outline" size={24} color="#333" />
+                <TextInput
+                  style={styles.input}
+                  value={editedUser.full_name}
+                  onChangeText={(text) => setEditedUser({...editedUser, full_name: text})}
+                  placeholder="Nombre"
+                  placeholderTextColor="#999"
+                />
+              </View>
+              {errors.full_name && <Text style={styles.errorText}>{errors.full_name}</Text>}
+              
+              <View style={styles.infoItem}>
+                <Ionicons name="person-outline" size={24} color="#333" />
+                <TextInput
+                  style={styles.input}
+                  value={editedUser.last_name}
+                  onChangeText={(text) => setEditedUser({...editedUser, last_name: text})}
+                  placeholder="Apellido"
+                  placeholderTextColor="#999"
+                />
+              </View>
+              {errors.last_name && <Text style={styles.errorText}>{errors.last_name}</Text>}
+            </>
+          ) : (
+            <View style={styles.infoItem}>
+              <Ionicons name="person-outline" size={24} color="#333" />
+              <Text style={styles.infoValue}>{`${userData.full_name || ''} ${userData.last_name || ''}`}</Text>
+            </View>
+          )}
+
+          <View style={styles.infoItem}>
+            <Ionicons name="mail-outline" size={24} color="#333" />
+            <Text style={styles.infoValue}>{userData.email || 'No especificado'}</Text>
+          </View>
+          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+
+          {isEditing ? (
+            <View style={styles.infoItem}>
+              <Ionicons name="call-outline" size={24} color="#333" />
+              <TextInput
+                style={styles.input}
+                value={editedUser.phone_number}
+                onChangeText={(text) => setEditedUser({...editedUser, phone_number: text})}
+                placeholder="Teléfono"
+                placeholderTextColor="#999"
+                keyboardType="phone-pad"
+              />
+            </View>
+          ) : (
+            <View style={styles.infoItem}>
+              <Ionicons name="call-outline" size={24} color="#333" />
+              <Text style={styles.infoValue}>{userData.phone_number || 'No especificado'}</Text>
+            </View>
+          )}
+          {errors.phone_number && <Text style={styles.errorText}>{errors.phone_number}</Text>}
+
+          {isEditing ? (
+            <View style={styles.infoItem}>
+              <Ionicons name="calendar-outline" size={24} color="#333" />
+              <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
+                <Text style={styles.datePickerText}>{editedUser.birth_date || 'Seleccionar fecha'}</Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={editedUser.birth_date ? new Date(editedUser.birth_date) : new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                />
+              )}
+            </View>
+          ) : (
+            <View style={styles.infoItem}>
+              <Ionicons name="calendar-outline" size={24} color="#333" />
+              <Text style={styles.infoValue}>
+                {userData.birth_date ? new Date(userData.birth_date).toLocaleDateString() : 'No especificado'}
+              </Text>
+            </View>
+          )}
+          {errors.birth_date && <Text style={styles.errorText}>{errors.birth_date}</Text>}
+
+          {isEditing ? (
+            <View style={styles.infoItem}>
+              <Ionicons name="people-outline" size={24} color="#333" />
+              <Picker
+                selectedValue={editedUser.gender}
+                style={styles.picker}
+                onValueChange={(itemValue) => setEditedUser({...editedUser, gender: itemValue})}
+              >
+                <Picker.Item label="Seleccionar género" value="" />
+                <Picker.Item label="Masculino" value="Masculino" />
+                <Picker.Item label="Femenino" value="Femenino" />
+                <Picker.Item label="Otro" value="Otro" />
+              </Picker>
+            </View>
+          ) : (
+            <View style={styles.infoItem}>
+              <Ionicons name="people-outline" size={24} color="#333" />
+              <Text style={styles.infoValue}>{userData.gender || 'No especificado'}</Text>
+            </View>
+          )}
+          {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
+        </View>
+
+        <CustomAlert
+          isVisible={alertConfig.isVisible}
+          type={alertConfig.type}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          buttons={alertConfig.buttons}
+          onClose={hideAlert}
+        />
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  headerBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 10,
+    backgroundColor: '#ffeef2',
+  },
+  logoutButton: {
+    padding: 5,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    backgroundColor: '#ffeef2',
+  },
+  avatarContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+    borderWidth: 3,
+    borderColor: '#ffd1dc',
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
+  changePhotoButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#333',
+    padding: 8,
+    borderRadius: 20,
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  profession: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 15,
+  },
+  editButton: {
+    backgroundColor: '#333',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+  },
+  editButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  editActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 15,
+  },
+  actionButton: {
+    backgroundColor: '#333',
+    padding: 10,
+    borderRadius: 25,
+    marginHorizontal: 10,
+  },
+  cancelButton: {
+    backgroundColor: '#666',
+  },
+  infoSection: {
+    padding: 20,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    paddingBottom: 10,
+  },
+  infoValue: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 15,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 15,
+  },
+  datePickerButton: {
+    flex: 1,
+    marginLeft: 15,
+  },
+  datePickerText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  picker: {
+    flex: 1,
+    marginLeft: 15,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginLeft: 39,
+    marginTop: -15,
+    marginBottom: 10,
+  },
+});
+export default ProfileScreen;

@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "ExternalGlowApp",
+    "slug": "ExternalGlowApp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/iconmobi.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/iconmobi.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.danielglow.ExternalGlowApp"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b93697d8-e068-440a-9d90-a873c0aa07bb"
+      }
+    }
+  }
+}
