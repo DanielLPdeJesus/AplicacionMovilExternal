@@ -4,7 +4,6 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
-// Importa tus pantallas
 import HomeScreen from '../features/home/HomeScreen';
 import ReservationInfoScreen from '../features/reservation/ReservationInfoScreen';
 import IaScreen from '../features/hairstyle/IaScreen';
@@ -41,7 +40,7 @@ const HomeTabs = () => {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: 'tomato',
+        tabBarActiveTintColor: 'pink',
         tabBarInactiveTintColor: 'gray',
         tabBarStyle: [
           {

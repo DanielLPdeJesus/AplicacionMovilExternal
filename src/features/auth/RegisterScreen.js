@@ -38,6 +38,42 @@ const RegisterScreen = ({ navigation }) => {
     })();
   }, []);
 
+  useEffect(() => {
+    if (fullName && errors.fullName) setErrors(prev => ({ ...prev, fullName: '' }));
+  }, [fullName]);
+  
+  useEffect(() => {
+    if (lastName && errors.lastName) setErrors(prev => ({ ...prev, lastName: '' }));
+  }, [lastName]);
+  
+  useEffect(() => {
+    if (email && errors.email) setErrors(prev => ({ ...prev, email: '' }));
+  }, [email]);
+  
+  useEffect(() => {
+    if (phone && errors.phone) setErrors(prev => ({ ...prev, phone: '' }));
+  }, [phone]);
+  
+  useEffect(() => {
+    if (gender && errors.gender) setErrors(prev => ({ ...prev, gender: '' }));
+  }, [gender]);
+  
+  useEffect(() => {
+    if (birthDate && errors.birthDate) setErrors(prev => ({ ...prev, birthDate: '' }));
+  }, [birthDate]);
+  
+  useEffect(() => {
+    if (password && errors.password) setErrors(prev => ({ ...prev, password: '' }));
+  }, [password]);
+  
+  useEffect(() => {
+    if (confirmPassword && errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: '' }));
+  }, [confirmPassword]);
+  
+  useEffect(() => {
+    if (profileImage && errors.profileImage) setErrors(prev => ({ ...prev, profileImage: '' }));
+  }, [profileImage]);
+
   const handlePasswordChange = (newPassword) => {
     setPassword(newPassword);
   };
@@ -110,8 +146,10 @@ const RegisterScreen = ({ navigation }) => {
       newErrors.password = "La contraseña es requerida";
     } else if (password.length < 6) {
       newErrors.password = "La contraseña debe tener al menos 6 caracteres";
+    } else if (!/^(?=.*[A-Z])(?=.*\d)[\w@]{6,}$/.test(password)) {
+      newErrors.password = "La contraseña debe contener al menos una letra mayúscula, un número, y solo puede incluir letras, números, @, y _";
     }
-
+    
     if (password !== confirmPassword) {
       newErrors.confirmPassword = "Las contraseñas no coinciden";
     }
@@ -122,6 +160,19 @@ const RegisterScreen = ({ navigation }) => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+ 
+  const formatDate = (date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [year, month, day].join('-');
   };
 
   const handleRegister = async () => {
@@ -148,7 +199,7 @@ const RegisterScreen = ({ navigation }) => {
           email,
           phone,
           gender,
-          birthDate: birthDate.toISOString(),
+          birthDate: formatDate(birthDate), // Usamos la función formatDate aquí
           password,
           profileImage: imageBase64,
         }),
@@ -172,7 +223,7 @@ const RegisterScreen = ({ navigation }) => {
       setIsLoading(false);
     }
   };
-
+  
   const convertImageToBase64 = async (uri) => {
     const response = await fetch(uri);
     const blob = await response.blob();
@@ -378,8 +429,8 @@ const styles = StyleSheet.create({
   passwordHint: {
     color: 'gray',
     fontSize: 12,
-    marginTop: -15,
-    marginBottom: 20,
+    marginTop: -10,
+    marginBottom: 25,
   },
   button: {
     backgroundColor: 'black',
@@ -406,5 +457,4 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 });
-
 export default RegisterScreen;

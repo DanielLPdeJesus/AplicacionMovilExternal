@@ -7,7 +7,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import CustomAlert from '../../components/common/CustomAlert';
 
-const API_URL = 'https://www.jaydey.com/ServicesMovil'; 
+const API_URL = 'https://www.jaydey.com/ServicesMovil';
 
 const ProfileScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -16,6 +16,7 @@ const ProfileScreen = ({ navigation }) => {
   const [editedUser, setEditedUser] = useState({});
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [errors, setErrors] = useState({});
+  const [imageLoading, setImageLoading] = useState(false);
 
   const { isLoggedIn, user, logout } = useAuth();
   const [alertConfig, setAlertConfig] = useState({
@@ -26,32 +27,59 @@ const ProfileScreen = ({ navigation }) => {
     buttons: []
   });
 
+  const formatDate = (date) => {
+    if (!date) return '';
+    if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return date; 
+    }
+    const d = new Date(date);
+    const year = d.getFullYear();
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [year, month, day].join('-');
+  };
+
+  const parseDate = (dateString) => {
+    if (!dateString) return null;
+    if (dateString instanceof Date) return dateString;
+    const [year, month, day] = dateString.split('-');
+    return new Date(year, month - 1, day);
+  };
+
   useEffect(() => {
     if (!isLoggedIn) {
       navigation.reset({
         index: 0,
         routes: [{ name: 'Login' }],
       });
-    } else {
-      setUserData(user);
-      setEditedUser(user);
+    } else if (user) {
+      const formattedUser = {
+        ...user,
+        birth_date: user.birth_date ? formatDate(user.birth_date) : null
+      };
+      setUserData(formattedUser);
+      setEditedUser(formattedUser);
       setIsLoading(false);
     }
   }, [isLoggedIn, user, navigation]);
+
 
   const handleLogout = async () => {
     try {
       await logout();
       navigation.reset({
         index: 0,
-        routes: [{ name: 'HomeTabs' }], // Asegúrate de que 'Home' sea el nombre correcto de tu pantalla de inicio
+        routes: [{ name: 'HomeTabs' }],
       });
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
       showAlert('error', 'Error', 'No se pudo cerrar la sesión. Por favor, inténtalo de nuevo.');
     }
   };
-
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -81,12 +109,6 @@ const ProfileScreen = ({ navigation }) => {
       newErrors.last_name = "El apellido no debe contener números ni caracteres especiales";
     }
   
-    if (!editedUser.email) {
-      newErrors.email = "El correo electrónico es requerido";
-    } else if (!/\S+@\S+\.\S+/.test(editedUser.email)) {
-      newErrors.email = "El correo electrónico no es válido";
-    }
-  
     if (editedUser.phone_number && !/^\d{10}$/.test(editedUser.phone_number)) {
       newErrors.phone_number = "El número de teléfono debe tener exactamente 10 dígitos";
     }
@@ -95,7 +117,7 @@ const ProfileScreen = ({ navigation }) => {
       newErrors.birth_date = "La fecha de nacimiento es requerida";
     } else {
       const currentDate = new Date();
-      const selectedDate = new Date(editedUser.birth_date);
+      const selectedDate = parseDate(editedUser.birth_date);
       const age = currentDate.getFullYear() - selectedDate.getFullYear();
       const monthDiff = currentDate.getMonth() - selectedDate.getMonth();
       
@@ -131,7 +153,11 @@ const ProfileScreen = ({ navigation }) => {
         },
         body: JSON.stringify({
           userId: userData.uid,
-          ...editedUser
+          nombre_usuario: editedUser.full_name,
+          apellidos: editedUser.last_name,
+          numero_telefono: editedUser.phone_number,
+          genero: editedUser.gender,
+          fecha_cumpleanos: editedUser.birth_date
         }),
       });
       
@@ -214,7 +240,8 @@ const ProfileScreen = ({ navigation }) => {
   const handleDateChange = (event, selectedDate) => {
     setShowDatePicker(false);
     if (selectedDate) {
-      setEditedUser({...editedUser, birth_date: selectedDate.toISOString().split('T')[0]});
+      const formattedDate = formatDate(selectedDate);
+      setEditedUser({...editedUser, birth_date: formattedDate});
     }
   };
 
@@ -235,19 +262,30 @@ const ProfileScreen = ({ navigation }) => {
       </View>
       <ScrollView>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.avatarContainer} onPress={handleChangeProfileImage}>
-            {userData.profile_image ? (
-              <Image
-                source={{ uri: userData.profile_image }}
-                style={styles.avatar}
-              />
-            ) : (
-              <Ionicons name="person-circle-outline" size={80} color="#ffd1dc" />
-            )}
-            <View style={styles.changePhotoButton}>
+          <View style={styles.avatarWrapper}>
+            <TouchableOpacity style={styles.avatarContainer} onPress={handleChangeProfileImage}>
+              {userData.profile_image ? (
+                <>
+                  <Image
+                    source={{ uri: userData.profile_image }}
+                    style={styles.avatar}
+                    onLoadStart={() => setImageLoading(true)}
+                    onLoadEnd={() => setImageLoading(false)}
+                  />
+                  {imageLoading && (
+                    <View style={styles.imageLoadingContainer}>
+                      <ActivityIndicator size="large" color="#333" />
+                    </View>
+                  )}
+                </>
+              ) : (
+                <Ionicons name="person-circle-outline" size={80} color="#ffd1dc" />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.changePhotoButton} onPress={handleChangeProfileImage}>
               <Ionicons name="camera" size={20} color="#fff" />
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.name}>{`${userData.full_name || ''} ${userData.last_name || ''}`}</Text>
           <Text style={styles.profession}>{userData.role || 'Cliente'}</Text>
           {!isEditing ? (
@@ -304,7 +342,6 @@ const ProfileScreen = ({ navigation }) => {
             <Ionicons name="mail-outline" size={24} color="#333" />
             <Text style={styles.infoValue}>{userData.email || 'No especificado'}</Text>
           </View>
-          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
           {isEditing ? (
             <View style={styles.infoItem}>
@@ -324,194 +361,216 @@ const ProfileScreen = ({ navigation }) => {
               <Text style={styles.infoValue}>{userData.phone_number || 'No especificado'}</Text>
             </View>
           )}
-          {errors.phone_number && <Text style={styles.errorText}>{errors.phone_number}</Text>}
 
-          {isEditing ? (
-            <View style={styles.infoItem}>
-              <Ionicons name="calendar-outline" size={24} color="#333" />
-              <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
-                <Text style={styles.datePickerText}>{editedUser.birth_date || 'Seleccionar fecha'}</Text>
-              </TouchableOpacity>
-              {showDatePicker && (
-                <DateTimePicker
-                  value={editedUser.birth_date ? new Date(editedUser.birth_date) : new Date()}
-                  mode="date"
-                  display="default"
-                  onChange={handleDateChange}
-                />
-              )}
-            </View>
-          ) : (
-            <View style={styles.infoItem}>
-              <Ionicons name="calendar-outline" size={24} color="#333" />
-              <Text style={styles.infoValue}>
-                {userData.birth_date ? new Date(userData.birth_date).toLocaleDateString() : 'No especificado'}
-              </Text>
-            </View>
-          )}
-          {errors.birth_date && <Text style={styles.errorText}>{errors.birth_date}</Text>}
+{errors.phone_number && <Text style={styles.errorText}>{errors.phone_number}</Text>}
 
-          {isEditing ? (
-            <View style={styles.infoItem}>
-              <Ionicons name="people-outline" size={24} color="#333" />
-              <Picker
-                selectedValue={editedUser.gender}
-                style={styles.picker}
-                onValueChange={(itemValue) => setEditedUser({...editedUser, gender: itemValue})}
-              >
-                <Picker.Item label="Seleccionar género" value="" />
-                <Picker.Item label="Masculino" value="Masculino" />
-                <Picker.Item label="Femenino" value="Femenino" />
-                <Picker.Item label="Otro" value="Otro" />
-              </Picker>
-            </View>
-          ) : (
-            <View style={styles.infoItem}>
-              <Ionicons name="people-outline" size={24} color="#333" />
-              <Text style={styles.infoValue}>{userData.gender || 'No especificado'}</Text>
-            </View>
-          )}
-          {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
-        </View>
+{isEditing ? (
+  <View style={styles.infoItem}>
+    <Ionicons name="calendar-outline" size={24} color="#333" />
+    <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
+      <Text style={styles.datePickerText}>
+        {editedUser.birth_date ? parseDate(editedUser.birth_date).toLocaleDateString() : 'Seleccionar fecha'}
+      </Text>
+    </TouchableOpacity>
+    {showDatePicker && (
+      <DateTimePicker
+        value={editedUser.birth_date ? parseDate(editedUser.birth_date) : new Date()}
+        mode="date"
+        display="default"
+        onChange={handleDateChange}
+      />
+    )}
+  </View>
+) : (
+  <View style={styles.infoItem}>
+    <Ionicons name="calendar-outline" size={24} color="#333" />
+    <Text style={styles.infoValue}>
+      {userData.birth_date ? parseDate(userData.birth_date).toLocaleDateString() : 'No especificado'}
+    </Text>
+  </View>
+)}
+{errors.birth_date && <Text style={styles.errorText}>{errors.birth_date}</Text>}
 
-        <CustomAlert
-          isVisible={alertConfig.isVisible}
-          type={alertConfig.type}
-          title={alertConfig.title}
-          message={alertConfig.message}
-          buttons={alertConfig.buttons}
-          onClose={hideAlert}
-        />
-      </ScrollView>
-    </View>
-  );
+{isEditing ? (
+  <View style={styles.infoItem}>
+    <Ionicons name="people-outline" size={24} color="#333" />
+    <Picker
+      selectedValue={editedUser.gender}
+      style={styles.picker}
+      onValueChange={(itemValue) => setEditedUser({...editedUser, gender: itemValue})}
+    >
+      <Picker.Item label="Seleccionar género" value="" />
+      <Picker.Item label="Masculino" value="Masculino" />
+      <Picker.Item label="Femenino" value="Femenino" />
+      <Picker.Item label="Otro" value="Otro" />
+    </Picker>
+  </View>
+) : (
+  <View style={styles.infoItem}>
+    <Ionicons name="people-outline" size={24} color="#333" />
+    <Text style={styles.infoValue}>{userData.gender || 'No especificado'}</Text>
+  </View>
+)}
+{errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
+</View>
+
+<CustomAlert
+isVisible={alertConfig.isVisible}
+type={alertConfig.type}
+title={alertConfig.title}
+message={alertConfig.message}
+buttons={alertConfig.buttons}
+onClose={hideAlert}
+/>
+</ScrollView>
+</View>
+);
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  headerBar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    padding: 10,
-    backgroundColor: '#ffeef2',
-  },
-  logoutButton: {
-    padding: 5,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    backgroundColor: '#ffeef2',
-  },
-  avatarContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-    borderWidth: 3,
-    borderColor: '#ffd1dc',
-  },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
-  changePhotoButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#333',
-    padding: 8,
-    borderRadius: 20,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-  },
-  profession: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 15,
-  },
-  editButton: {
-    backgroundColor: '#333',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 25,
-  },
-  editButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  editActions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 15,
-  },
-  actionButton: {
-    backgroundColor: '#333',
-    padding: 10,
-    borderRadius: 25,
-    marginHorizontal: 10,
-  },
-  cancelButton: {
-    backgroundColor: '#666',
-  },
-  infoSection: {
-    padding: 20,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    paddingBottom: 10,
-  },
-  infoValue: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    marginLeft: 15,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    marginLeft: 15,
-  },
-  datePickerButton: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  datePickerText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  picker: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 12,
-    marginLeft: 39,
-    marginTop: -15,
-    marginBottom: 10,
-  },
+container: {
+flex: 1,
+backgroundColor: '#fff',
+},
+headerBar: {
+flexDirection: 'row',
+justifyContent: 'flex-end',
+padding: 10,
+backgroundColor: '#ffeef2',
+},
+logoutButton: {
+padding: 5,
+},
+loadingContainer: {
+flex: 1,
+justifyContent: 'center',
+alignItems: 'center',
+},
+header: {
+alignItems: 'center',
+paddingVertical: 20,
+backgroundColor: '#ffeef2',
+},
+avatarWrapper: {
+width: 120,
+height: 120,
+marginBottom: 15,
+position: 'relative',
+},
+avatarContainer: {
+width: '100%',
+height: '100%',
+borderRadius: 60,
+backgroundColor: '#f0f0f0',
+justifyContent: 'center',
+alignItems: 'center',
+borderWidth: 3,
+borderColor: '#ffd1dc',
+overflow: 'hidden',
+},
+avatar: {
+width: '100%',
+height: '100%',
+borderRadius: 60,
+},
+changePhotoButton: {
+position: 'absolute',
+bottom: 0,
+right: 0,
+backgroundColor: '#333',
+padding: 8,
+borderRadius: 20,
+zIndex: 1,
+},
+name: {
+fontSize: 24,
+fontWeight: 'bold',
+color: '#333',
+marginBottom: 5,
+},
+profession: {
+fontSize: 16,
+color: '#666',
+marginBottom: 15,
+},
+editButton: {
+backgroundColor: '#333',
+paddingHorizontal: 20,
+paddingVertical: 10,
+borderRadius: 25,
+},
+editButtonText: {
+color: '#fff',
+fontSize: 16,
+fontWeight: '500',
+},
+editActions: {
+flexDirection: 'row',
+justifyContent: 'center',
+marginTop: 15,
+},
+actionButton: {
+backgroundColor: '#333',
+padding: 10,
+borderRadius: 25,
+marginHorizontal: 10,
+},
+cancelButton: {
+backgroundColor: '#666',
+},
+infoSection: {
+padding: 20,
+},
+infoItem: {
+flexDirection: 'row',
+alignItems: 'center',
+marginBottom: 20,
+borderBottomWidth: 1,
+borderBottomColor: '#f0f0f0',
+paddingBottom: 10,
+},
+infoValue: {
+flex: 1,
+fontSize: 16,
+color: '#333',
+marginLeft: 15,
+},
+input: {
+flex: 1,
+fontSize: 16,
+color: '#333',
+marginLeft: 15,
+},
+datePickerButton: {
+flex: 1,
+marginLeft: 15,
+},
+datePickerText: {
+fontSize: 16,
+color: '#333',
+},
+picker: {
+flex: 1,
+marginLeft: 15,
+},
+errorText: {
+color: 'red',
+fontSize: 12,
+marginLeft: 39,
+marginTop: -15,
+marginBottom: 10,
+},
+imageLoadingContainer: {
+position: 'absolute',
+top: 0,
+left: 0,
+right: 0,
+bottom: 0,
+justifyContent: 'center',
+alignItems: 'center',
+backgroundColor: 'rgba(255, 209, 220, 0.7)',
+borderRadius: 60,
+},
 });
+
 export default ProfileScreen;
