@@ -1,62 +1,124 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  SafeAreaView, 
-  TouchableOpacity, 
-  Image, 
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  Image,
   FlatList,
   Modal,
   ActivityIndicator,
-  Alert
-} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
-import { AntDesign } from '@expo/vector-icons';
-import { useAuth } from '../../context/AuthContext';
+  Alert,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
+import * as FileSystem from "expo-file-system";
+import { AntDesign } from "@expo/vector-icons";
+import { useAuth } from "../../context/AuthContext";
 
-const FLASK_API_URL = 'https://www.jaydey.com/ServicesMovil';
+const FLASK_API_URL = "https://www.jaydey.com/ServicesMovil";
 
 const estilos = [
-  { 
-    id: '1', 
-    name: 'BuzzCut',
-    displayName: 'Buzz Cut',
-    description: 'Corte muy corto y uniforme en toda la cabeza',
-    image: require('../../../assets/buzzcut.jpg') 
+  {
+    id: "1",
+    name: "BuzzCut",
+    displayName: "Buzz Cut",
+    description: "Corte de cabello muy corto y uniforme, ideal para un look fresco y fácil de mantener.",
+    image: require("../../../assets/buzzcut.jpg"),
   },
-  { 
-    id: '2', 
-    name: 'ManBun',
-    displayName: 'Man Bun',
-    description: 'Recogido en moño en la parte trasera',
-    image: require('../../../assets/manbun.jpg') 
+  {
+    id: "2",
+    name: "ManBun",
+    displayName: "Man Bun",
+    description: "Recogido en un moño en la parte trasera de la cabeza, perfecto para quienes buscan un estilo moderno y versátil.",
+    image: require("../../../assets/manbun.jpg"),
   },
-  { 
-    id: '3', 
-    name: 'Pompadour',
-    displayName: 'Pompadour',
-    description: 'Volumen en la parte superior peinado hacia atrás',
-    image: require('../../../assets/popadour.jpg') 
+  {
+    id: "3",
+    name: "Pompadour",
+    displayName: "Pompadour",
+    description: "Estilo con gran volumen en la parte superior, peinado hacia atrás para un look elegante y clásico.",
+    image: require("../../../assets/popadour.jpg"),
   },
-  { 
-    id: '4', 
-    name: 'UnderCut',
-    displayName: 'UnderCut',
-    description: 'Lados y parte trasera rapados con pelo más largo arriba',
-    image: require('../../../assets/undercut.png') 
+  {
+    id: "4",
+    name: "UnderCut",
+    displayName: "Under Cut",
+    description: "Corte con los lados y la parte trasera rapados y el cabello largo en la parte superior, ideal para un look audaz y moderno.",
+    image: require("../../../assets/undercut.png"),
   },
-  
+  {
+    id: "5",
+    name: "SlickBack",
+    displayName: "Slick Back",
+    description: "Todo el cabello peinado hacia atrás para un estilo pulido y sofisticado.",
+    image: require("../../../assets/slicked.jpg"),
+  },
+  {
+    id: "6",
+    name: "Afro",
+    displayName: "Afro",
+    description: "Estilo de gran volumen natural, ideal para quienes desean lucir su textura de cabello rizada con orgullo.",
+    image: require("../../../assets/afro.jpeg"),
+  },
+  {
+    id: "7",
+    name: "BowlCut",
+    displayName: "Bowl Cut",
+    description: "Corte en forma de tazón, con un contorno redondeado en la parte superior y lados más cortos.",
+    image: require("../../../assets/bobcut.jpg"),
+  },
+  {
+    id: "8",
+    name: "DoubleBun",
+    displayName: "Double Bun",
+    description: "Estilo con dos moños, uno a cada lado de la cabeza, perfecto para un look divertido y juvenil.",
+    image: require("../../../assets/doublebun.jpeg"),
+  },
+  {
+    id: "9",
+    name: "LongStraight",
+    displayName: "Long Straight",
+    description: "Cabello largo y liso, peinado hacia atrás para un estilo simple y elegante.",
+    image: require("../../../assets/longstraint.jpg"),
+  },
+  {
+    id: "10",
+    name: "ShortCurlyPixie",
+    displayName: "Short Curly Pixie",
+    description: "Estilo corto y rizado, con los lados y la parte trasera recortados y rizos naturales en la parte superior.",
+    image: require("../../../assets/shortcurlypixie.jpg"),
+  },
+  {
+    id: "11",
+    name: "ShortTwintails",
+    displayName: "Short Twin Tails",
+    description: "Cabello corto dividido en dos coletas, perfecto para un look juvenil y original.",
+    image: require("../../../assets/shorttwin.jpg"),
+  },
+  {
+    id: "12",
+    name: "ShortStraight",
+    displayName: "Short Straight",
+    description: "Cabello corto y liso peinado hacia atrás, ideal para un look elegante y fácil de manejar.",
+    image: require("../../../assets/straint.jpeg"),
+  },
+  {
+    id: "13",
+    name: "CurlyBob",
+    displayName: "Curly Bob",
+    description: "Bob con rizos, para un look voluminoso y lleno de personalidad.",
+    image: require("../../../assets/curlebob.jpg"),
+  }
 ];
-
 function IaScreen() {
   const [selectedStyle, setSelectedStyle] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedImage, setProcessedImage] = useState(null);
+  const [isImageLoading, setIsImageLoading] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -66,11 +128,14 @@ function IaScreen() {
   const requestPermissions = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permiso requerido', 'Se necesitan permisos para acceder a la galería');
+      if (status !== "granted") {
+        Alert.alert(
+          "Permiso requerido",
+          "Se necesitan permisos para acceder a la galería"
+        );
       }
     } catch (error) {
-      console.error('Error al solicitar permisos:', error);
+      console.error("Error al solicitar permisos:", error);
     }
   };
 
@@ -90,7 +155,7 @@ function IaScreen() {
       );
       return manipResult;
     } catch (error) {
-      console.error('Error al redimensionar la imagen:', error);
+      console.error("Error al redimensionar la imagen:", error);
       throw error;
     }
   };
@@ -111,8 +176,8 @@ function IaScreen() {
         setShowPreview(true);
       }
     } catch (error) {
-      console.error('Error al seleccionar la imagen:', error);
-      Alert.alert('Error', 'No se pudo seleccionar la imagen');
+      console.error("Error al seleccionar la imagen:", error);
+      Alert.alert("Error", "No se pudo seleccionar la imagen");
     }
   };
 
@@ -120,170 +185,166 @@ function IaScreen() {
     try {
       let attempts = 0;
       const maxAttempts = 30;
-  
+
       while (attempts < maxAttempts) {
         console.log(`Verificando estado: intento ${attempts + 1}`);
-        
-        const response = await fetch(`${FLASK_API_URL}/api/check-hairstyle-status/${taskId}`);
+
+        const response = await fetch(
+          `${FLASK_API_URL}/api/check-hairstyle-status/${taskId}`
+        );
         const responseText = await response.text();
-        console.log('Respuesta del check status:', responseText);
-  
+        console.log("Respuesta del check status:", responseText);
+
         const data = JSON.parse(responseText);
-  
-        if (data.error || data.message?.toLowerCase().includes('error')) {
-          console.log('Error detectado en la respuesta:', data);
-          throw new Error('INVALID_IMAGE');
+
+        if (data.error || data.message?.toLowerCase().includes("error")) {
+          console.log("Error detectado en la respuesta:", data);
+          throw new Error("INVALID_IMAGE");
         }
-  
+
         if (data.task_status === 2 && data.firebase_url) {
           setProcessedImage(data.firebase_url);
           setIsProcessing(false);
           break;
         } else if (data.task_status === 0 || data.task_status === 1) {
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(resolve, 5000));
           attempts++;
         } else if (data.task_status === -1 || data.task_status === 3) {
-          throw new Error('INVALID_IMAGE');
+          throw new Error("INVALID_IMAGE");
         }
       }
-  
+
       if (attempts >= maxAttempts) {
-        throw new Error('TIMEOUT');
+        throw new Error("TIMEOUT");
       }
     } catch (error) {
-      let errorMessage = 'No se pudo completar el procesamiento';
-      let errorTitle = 'Error';
-  
-      if (error.message === 'INVALID_IMAGE') {
-        errorTitle = 'Lo sentimos';
-        errorMessage = 'Su imagen no es válida para procesar. Por favor, asegúrese de que la foto muestre claramente su rostro y vuelva a intentarlo.';
-      } else if (error.message === 'TIMEOUT') {
-        errorMessage = 'El procesamiento está tomando demasiado tiempo. Por favor, intente nuevamente.';
+      let errorMessage = "No se pudo completar el procesamiento";
+      let errorTitle = "Error";
+
+      if (error.message === "INVALID_IMAGE") {
+        errorTitle = "Lo sentimos";
+        errorMessage =
+          "Su imagen no es válida para procesar. Por favor, asegúrese de que la foto muestre claramente su rostro y vuelva a intentarlo.";
+      } else if (error.message === "TIMEOUT") {
+        errorMessage =
+          "El procesamiento está tomando demasiado tiempo. Por favor, intente nuevamente.";
       }
-  
-      Alert.alert(
-        errorTitle,
-        errorMessage,
-        [
-          {
-            text: 'Reintentar',
-            onPress: () => {
-              setIsProcessing(false);
-              setShowPreview(true); 
-            }
+
+      Alert.alert(errorTitle, errorMessage, [
+        {
+          text: "Reintentar",
+          onPress: () => {
+            setIsProcessing(false);
+            setShowPreview(true);
           },
-          {
-            text: 'Cancelar',
-            style: 'cancel',
-            onPress: () => {
-              setIsProcessing(false);
-              setShowPreview(false);
-              setSelectedImage(null);
-              setSelectedStyle(null);
-              setProcessedImage(null);
-            }
-          }
-        ]
-      );
+        },
+        {
+          text: "Cancelar",
+          style: "cancel",
+          onPress: () => {
+            setIsProcessing(false);
+            setShowPreview(false);
+            setSelectedImage(null);
+            setSelectedStyle(null);
+            setProcessedImage(null);
+          },
+        },
+      ]);
     }
   };
-  
+
   const processImage = async () => {
     if (!selectedImage || !selectedStyle) return;
-  
+
     setIsProcessing(true);
     setShowPreview(false);
-  
+
     try {
-      console.log('Preparando imagen para procesar:', selectedImage.uri);
-        
+      console.log("Preparando imagen para procesar:", selectedImage.uri);
+
       const fileInfo = await FileSystem.getInfoAsync(selectedImage.uri);
       if (!fileInfo.exists) {
-        throw new Error('IMAGE_NOT_FOUND');
+        throw new Error("IMAGE_NOT_FOUND");
       }
-  
+
       const base64Image = await FileSystem.readAsStringAsync(selectedImage.uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
-  
+
       const requestData = {
         image: `data:image/jpeg;base64,${base64Image}`,
         hair_style: selectedStyle.name,
-        userId: user?.uid || 'anonymous'
+        userId: user?.uid || "anonymous",
       };
-  
-      console.log('Enviando request con estilo:', selectedStyle.name);
-      console.log('Request data:', JSON.stringify(requestData, null, 2));
-  
+
+      console.log("Enviando request con estilo:", selectedStyle.name);
+
       const response = await fetch(`${FLASK_API_URL}/api/process-hairstyle`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify(requestData),
       });
-  
+
       const responseText = await response.text();
-      console.log('Respuesta completa del servidor:', responseText);
-  
+      console.log("Respuesta completa del servidor:", responseText);
+
       const data = JSON.parse(responseText);
-  
+
       if (!data.success || !data.task_id) {
-        throw new Error('INVALID_REQUEST');
+        throw new Error("INVALID_REQUEST");
       }
-  
+
       await checkProcessingStatus(data.task_id);
-  
     } catch (error) {
-      console.error('Error detallado en processImage:', error);
-      
-      let errorMessage = 'Ocurrió un error al procesar la imagen';
-      let errorTitle = 'Error';
-  
+      console.error("Error detallado en processImage:", error);
+
+      let errorMessage = "Ocurrió un error al procesar la imagen";
+      let errorTitle = "Error";
+
       switch (error.message) {
-        case 'IMAGE_NOT_FOUND':
-          errorMessage = 'No se pudo acceder a la imagen seleccionada';
+        case "IMAGE_NOT_FOUND":
+          errorMessage = "No se pudo acceder a la imagen seleccionada";
           break;
-        case 'INVALID_REQUEST':
-          errorTitle = 'Lo sentimos';
-          errorMessage = 'No se pudo iniciar el procesamiento de la imagen. Por favor, intente con otra foto.';
+        case "INVALID_REQUEST":
+          errorTitle = "Lo sentimos";
+          errorMessage =
+            "No se pudo iniciar el procesamiento de la imagen. Por favor, intente con otra foto.";
           break;
-        case 'INVALID_IMAGE':
-          errorTitle = 'Lo sentimos';
-          errorMessage = 'Su imagen no es válida para procesar. Por favor, asegúrese de que la foto muestre claramente su rostro.';
+        case "INVALID_IMAGE":
+          errorTitle = "Lo sentimos";
+          errorMessage =
+            "Su imagen no es válida para procesar. Por favor, asegúrese de que la foto muestre claramente su rostro.";
           break;
       }
-  
-      Alert.alert(
-        errorTitle,
-        errorMessage,
-        [
-          {
-            text: 'Reintentar',
-            onPress: () => {
-              setIsProcessing(false);
-              setShowPreview(true);  // Volver a mostrar la vista previa
-            }
+
+      Alert.alert(errorTitle, errorMessage, [
+        {
+          text: "Reintentar",
+          onPress: () => {
+            setIsProcessing(false);
+            setShowPreview(true);
           },
-          {
-            text: 'Cancelar',
-            style: 'cancel',
-            onPress: () => {
-              // Limpiar todos los estados
-              setIsProcessing(false);
-              setShowPreview(false);
-              setSelectedImage(null);
-              setSelectedStyle(null);
-              setProcessedImage(null);
-            }
-          }
-        ]
-      );
+        },
+        {
+          text: "Cancelar",
+          style: "cancel",
+          onPress: () => {
+            setIsProcessing(false);
+            setShowPreview(false);
+            setSelectedImage(null);
+            setSelectedStyle(null);
+            setProcessedImage(null);
+          },
+        },
+      ]);
     }
   };
+
   const renderItem = ({ item }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.itemContainer}
       onPress={() => pickImage(item)}
     >
@@ -300,7 +361,9 @@ function IaScreen() {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#000" />
         <Text style={styles.loadingText}>
-          Procesando imagen...{'\n'}Esto puede tomar unos minutos
+          Procesando imagen...{"\n"}
+          Esto puede tomar unos minutos{"\n"}
+          Disculpe la demora, estamos trabajando para obtener el mejor resultado
         </Text>
       </View>
     );
@@ -322,7 +385,7 @@ function IaScreen() {
           <FlatList
             data={estilos}
             renderItem={renderItem}
-            keyExtractor={item => item.id}
+            keyExtractor={(item) => item.id}
             style={styles.list}
           />
         </>
@@ -330,25 +393,70 @@ function IaScreen() {
         <View style={styles.resultContainer}>
           <Text style={styles.resultTitle}>Resultado</Text>
           <View style={styles.imagesContainer}>
-            <Image 
-              source={{ uri: selectedImage.uri }} 
-              style={styles.resultImage}
-            />
-            <Image 
-              source={{ uri: processedImage }} 
-              style={styles.resultImage}
-            />
+            <View style={styles.resultImageContainer}>
+              <Image
+                source={{ uri: selectedImage.uri }}
+                style={styles.resultImage}
+                resizeMode="cover"
+              />
+            </View>
+
+            <View style={styles.resultImageContainer}>
+              {isImageLoading ? (
+                <View style={styles.imageLoadingContainer}>
+                  <ActivityIndicator size="large" color="#000" />
+                  <Text style={styles.imageLoadingText}>
+                    Cargando imagen...{"\n"}
+                    Por favor, espere{"\n"}
+                    Disculpe la demora
+                  </Text>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: processedImage }}
+                  style={styles.resultImage}
+                  resizeMode="cover"
+                  onLoadStart={() => setIsImageLoading(true)}
+                  onLoadEnd={() => setIsImageLoading(false)}
+                />
+              )}
+            </View>
           </View>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => {
-              setProcessedImage(null);
-              setSelectedImage(null);
-              setSelectedStyle(null);
-            }}
-          >
-            <Text style={styles.backButtonText}>Probar Otro Estilo</Text>
-          </TouchableOpacity>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.backButton,
+                isImageLoading && styles.backButtonDisabled
+              ]}
+              onPress={() => {
+                if (!isImageLoading) {
+                  setProcessedImage(null);
+                  setSelectedImage(null);
+                  setSelectedStyle(null);
+                }
+              }}
+              disabled={isImageLoading}
+            >
+              <View style={styles.buttonContent}>
+                {isImageLoading && (
+                  <ActivityIndicator 
+                    size="small" 
+                    color="#666" 
+                    style={styles.buttonLoader} 
+                  />
+                )}
+                <Text 
+                  style={[
+                    styles.backButtonText,
+                    isImageLoading && styles.backButtonTextDisabled
+                  ]}
+                >
+                  {isImageLoading ? 'Cargando...' : 'Probar Otro Estilo'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -361,25 +469,25 @@ function IaScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{selectedStyle?.displayName}</Text>
-            
-            <Image 
-              source={{ uri: selectedImage?.uri }} 
+
+            <Image
+              source={{ uri: selectedImage?.uri }}
               style={styles.previewImage}
             />
-            
+
             <Text style={styles.modalDescription}>
               {selectedStyle?.description}
             </Text>
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setShowPreview(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancelar</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
                 onPress={processImage}
               >
@@ -396,57 +504,59 @@ function IaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 20,
     fontSize: 16,
-    textAlign: 'center',
-    color: '#666',
+    textAlign: "center",
+    color: "#666",
+    paddingHorizontal: 20,
+    lineHeight: 24,
   },
   avisoContainer: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: "#f8f8f8",
     margin: 16,
     padding: 16,
     borderRadius: 8,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },
   avisoTitle: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   avisoText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 4,
   },
   avisoSubtext: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginTop: 4,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     margin: 16,
   },
   list: {
     flex: 1,
   },
   itemContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#eee",
   },
   image: {
     width: 50,
@@ -454,41 +564,43 @@ const styles = StyleSheet.create({
     borderRadius: 25,
   },
   textContainer: {
+    flex: 1,
     marginLeft: 16,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   name: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   description: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginTop: 4,
+    marginRight: 16,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 20,
     padding: 20,
-    width: '90%',
-    alignItems: 'center',
+    width: "90%",
+    alignItems: "center",
   },
   modalTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 20,
   },
   modalDescription: {
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     marginVertical: 20,
-    color: '#666',
+    color: "#666",
   },
   previewImage: {
     width: 300,
@@ -496,40 +608,41 @@ const styles = StyleSheet.create({
     borderRadius: 15,
   },
   modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
   },
   modalButton: {
     flex: 1,
     padding: 15,
     borderRadius: 10,
     marginHorizontal: 5,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelButton: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: "#f8f8f8",
   },
   confirmButton: {
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   cancelButtonText: {
-    color: '#000',
-    fontWeight: '600',
+    color: "#000",
+    fontWeight: "600",
   },
   confirmButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
   },
   resultContainer: {
     flex: 1,
     padding: 16,
+    position: 'relative',
   },
   resultTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   imagesContainer: {
     flex: 1,
@@ -537,11 +650,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  resultImageContainer: {
+    width: '48%',
+    aspectRatio: 1,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
   resultImage: {
-    width: '45%',
-    height: 300,
+    width: '100%',
+    height: '100%',
     borderRadius: 10,
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 16,
+    right: 16,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonLoader: {
+    marginRight: 8,
   },
   backButton: {
     backgroundColor: '#000',
@@ -549,11 +683,32 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
   },
+  backButtonDisabled: {
+    backgroundColor: '#cccccc',
+  },
   backButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
+  backButtonTextDisabled: {
+    color: '#666666',
+  },
+  imageLoadingContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 10,
+  },
+  imageLoadingText: {
+    marginTop: 10,
+    textAlign: 'center',
+    color: '#666',
+    fontSize: 14,
+    paddingHorizontal: 10,
+  }
 });
 
 export default IaScreen;
