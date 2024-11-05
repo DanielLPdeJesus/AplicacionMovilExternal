@@ -38,37 +38,122 @@ const NewBusinessBanner = ({ business }) => (
   </View>
 );
 
-const BusinessCard = ({ business, navigation }) => (
-  <View style={styles.businessCard}>
-    <Image 
-      source={{ uri: business.negocios_imagenes[0] }} 
-      style={styles.businessImage} 
-    />
-    <Text style={styles.businessName}>{business.nombre_negocio}</Text>
-    <Text style={styles.businessAddress}>{business.direccion_negocio}</Text>
-    <View style={styles.userInfo}>
-      <BusinessRating business={business} />
+const BusinessCard = ({ business, navigation }) => {
+  const [isLiked, setIsLiked] = useState(false);
+  const [isDisliked, setIsDisliked] = useState(false);
+  const [likeCount, setLikeCount] = useState(business.numero_gustas || 0);
+  const [commentCount, setCommentCount] = useState(business.numero_comentarios || 0);
+
+  const handleLike = () => {
+    if (isLiked) {
+      setLikeCount(prev => prev - 1);
+    } else {
+      setLikeCount(prev => prev + 1);
+      if (isDisliked) {
+        setIsDisliked(false);
+      }
+    }
+    setIsLiked(!isLiked);
+    
+  };
+
+  const handleDislike = () => {
+    if (isDisliked) {
+      if (isLiked) {
+        setLikeCount(prev => prev - 1);
+      }
+    }
+    setIsDisliked(!isDisliked);
+    setIsLiked(false);
+    
+
+  };
+
+  const handleComment = () => {
+    navigation.navigate('Comments', { 
+      businessId: business.id,
+      businessName: business.nombre_negocio
+    });
+  };
+
+  return (
+    <View style={styles.businessCard}>
+      <Image 
+        source={{ uri: business.negocios_imagenes[0] }} 
+        style={styles.businessImage} 
+      />
+      <Text style={styles.businessName}>{business.nombre_negocio}</Text>
+      <Text style={styles.businessAddress}>{business.direccion_negocio}</Text>
+      <View style={styles.userInfo}>
+        <BusinessRating business={business} />
+      </View>
+
+      <View style={styles.businessActions}>
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => navigation.navigate('ViewBussinesScreen', { businessId: business.id })}
+        >
+          <Text style={styles.actionButtonText}>Ver mas</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.reserveButton]}
+          onPress={() => navigation.navigate('Reservation', { businessId: business.id })}
+        >
+          <Text style={[styles.actionButtonText, styles.reserveButtonText]}>Reservar</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.userInfo}>
+        <Image source={{ uri: business.perfiles_imagenes }} style={styles.newIconInfo} />
+        <Text style={styles.userName}>{business.nombre_propietario}</Text>
+      </View>
+
+      {/* Barra de interacción social */}
+      <View style={styles.socialBar}>
+        <View style={styles.socialButtonContainer}>
+          <TouchableOpacity 
+            style={styles.socialButton} 
+            onPress={handleLike}
+          >
+            <FontAwesome 
+              name={isLiked ? "heart" : "heart-o"} 
+              size={24} 
+              color={isLiked ? "#FF0000" : "#666"}
+            />
+          </TouchableOpacity>
+          <Text style={styles.socialCount}>{likeCount}</Text>
+        </View>
+
+        <View style={styles.socialButtonContainer}>
+          <TouchableOpacity 
+            style={styles.socialButton} 
+            onPress={handleDislike}
+          >
+            <FontAwesome 
+              name={isDisliked ? "thumbs-down" : "thumbs-o-down"} 
+              size={24} 
+              color={isDisliked ? "#666" : "#666"}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.socialButtonContainer}>
+          <TouchableOpacity 
+            style={styles.socialButton} 
+            onPress={handleComment}
+          >
+            <FontAwesome 
+              name="comment-o" 
+              size={24} 
+              color="#666"
+            />
+          </TouchableOpacity>
+          <Text style={styles.socialCount}>{commentCount}</Text>
+        </View>
+      </View>
     </View>
-    <View style={styles.businessActions}>
-      <TouchableOpacity 
-        style={styles.actionButton}
-        onPress={() => navigation.navigate('ViewBussinesScreen', { businessId: business.id })}
-      >
-        <Text style={styles.actionButtonText}>Ver mas</Text>
-      </TouchableOpacity>
-      <TouchableOpacity 
-        style={[styles.actionButton, styles.reserveButton]}
-        onPress={() => navigation.navigate('Reservation', { businessId: business.id })}
-      >
-        <Text style={[styles.actionButtonText, styles.reserveButtonText]}>Reservar</Text>
-      </TouchableOpacity>
-    </View>
-    <View style={styles.userInfo}>
-      <Image source={{ uri: business.perfiles_imagenes }} style={styles.newIconInfo} />
-      <Text style={styles.userName}>{business.nombre_propietario}</Text>
-    </View>
-  </View>
-);
+  );
+};
 
 const HomeScreen = ({ navigation }) => {
   const [businesses, setBusinesses] = useState([]);
@@ -201,12 +286,16 @@ const HomeScreen = ({ navigation }) => {
   );
 };
 
+export default HomeScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
     padding: 15
   },
+
+
   header: {
     marginBottom: 15,
     backgroundColor: '#fff',
@@ -228,6 +317,8 @@ const styles = StyleSheet.create({
     height: 40,
     fontSize: 16,
   },
+
+  // Estilos de los filtros
   filterButton: {
     padding: 10,
   },
@@ -262,6 +353,8 @@ const styles = StyleSheet.create({
   selectedFilterText: {
     color: '#fff',
   },
+
+  // Estilos del banner de nuevo negocio
   newBusinessBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -287,6 +380,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'gray',
   },
+
+  // Estilos de la tarjeta de negocio
   businessCard: {
     marginBottom: 10,
     borderRadius: 10,
@@ -296,6 +391,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    overflow: 'hidden', 
   },
   businessImage: {
     width: '100%',
@@ -312,50 +408,94 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'gray',
     paddingHorizontal: 10,
+    marginBottom: 5,
   },
+
+socialBar: {
+  flexDirection: 'row',
+  justifyContent: 'center', 
+  alignItems: 'center',
+  paddingHorizontal: 15,
+  paddingVertical: 8,
+  borderTopWidth: 1,
+  borderBottomWidth: 1,
+  borderColor: '#eee',
+  backgroundColor: '#fafafa',
+},
+socialButtonContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginHorizontal: 45, 
+},
+socialButton: {
+  padding: 3,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+socialCount: {
+  marginLeft: 3,
+  fontSize: 12,
+  color: '#666',
+  minWidth: 20,
+},
+
   businessActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 5,
+    padding: 8,
+    backgroundColor: '#fff',
   },
   actionButton: {
-    padding: 5,
-    borderRadius: 3,
+    padding: 8,
+    borderRadius: 5,
     borderWidth: 1,
     borderColor: '#ddd',
     flex: 1,
-    marginHorizontal: 1,
+    marginHorizontal: 4,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   actionButtonText: {
     color: '#000',
+    fontSize: 14,
+    fontWeight: '500',
   },
   reserveButton: {
     backgroundColor: '#000',
+    borderColor: '#000',
   },
   reserveButtonText: {
     color: '#fff',
   },
+
   userInfo: {
     padding: 10,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderColor: '#eee',
   },
   newIconInfo: {
-    width: 24,
-    height: 24,
-    marginRight: 10,
-    borderRadius: 100
+    width: 20,     
+    height: 20,   
+    marginRight: 8,
+    borderRadius: 100,
   },
   userName: {
     fontSize: 14,
     fontWeight: 'bold',
+    color: '#333',
   },
+
+  // Estilos del contenedor de calificación
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 5,
   },
+
+  // Estilos del estado vacío
   emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -376,5 +516,3 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
 });
-
-export default HomeScreen;
