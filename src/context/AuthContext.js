@@ -6,6 +6,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
+  const [authToken, setAuthToken] = useState(null); // Agregar estado para el token
 
   useEffect(() => {
     checkAuthStatus();
@@ -18,7 +19,8 @@ export const AuthProvider = ({ children }) => {
         const { id_token, user } = JSON.parse(sessionData);
         if (id_token && user) {
           setIsLoggedIn(true);
-          setUser(user);
+          setUser({...user, id_token}); // Incluir el token en el objeto user
+          setAuthToken(id_token);
         }
       }
     } catch (error) {
@@ -30,7 +32,8 @@ export const AuthProvider = ({ children }) => {
     try {
       await AsyncStorage.setItem('userSession', JSON.stringify(userData));
       setIsLoggedIn(true);
-      setUser(userData.user);
+      setUser({...userData.user, id_token: userData.id_token}); // Incluir el token en el objeto user
+      setAuthToken(userData.id_token);
     } catch (error) {
       console.error('Error al guardar la sesión:', error);
     }
@@ -41,16 +44,18 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.removeItem('userSession');
       setIsLoggedIn(false);
       setUser(null);
+      setAuthToken(null);
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     }
   };
 
+  
+
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, login, logout, checkAuthStatus }}>
+    <AuthContext.Provider value={{ isLoggedIn, user, login, logout, checkAuthStatus, authToken }}>
       {children}
     </AuthContext.Provider>
   );
 };
-
 export const useAuth = () => useContext(AuthContext);

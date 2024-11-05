@@ -67,9 +67,9 @@ const LoginScreen = ({ navigation }) => {
             ]);
             return;
         }
-
+    
         setIsLoading(true);
-
+    
         try {
             const response = await fetch('https://www.jaydey.com/ServicesMovil/api/login', {
                 method: 'POST',
@@ -81,15 +81,21 @@ const LoginScreen = ({ navigation }) => {
                     password
                 }),
             });
-
+    
             const data = await response.json();
-
+            console.log('Respuesta del login:', data); // Para debug
+    
             if (data.success) {
                 await saveCredentials();
-                await login({
-                    id_token: data.id_token,
-                    user: data.user
-                });
+                // Asegúrate de que user y id_token estén estructurados correctamente
+                const userData = {
+                    user: {
+                        ...data.user,
+                        id_token: data.id_token // Incluir el token en el objeto user
+                    },
+                    id_token: data.id_token
+                };
+                await login(userData);
                 navigation.navigate('HomeTabs');
             } else {
                 showAlert('error', 'Error', data.message || 'Hubo un problema al iniciar sesión.', [

@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import NoAuthScreen from '../../components/common/NotAuthScreen';
+import CustomAlert from '../../components/common/CustomAlert';
 
 const ReservationItem = ({ 
   tipo_de_servicio, 
@@ -14,6 +15,7 @@ const ReservationItem = ({
   comentarios,
   comentariosnego,
   id_negocio,
+  id,
   onCancel, 
   onViewDetails 
 }) => {
@@ -21,21 +23,21 @@ const ReservationItem = ({
     switch(status.toLowerCase()) {
       case 'pendiente':
         return {
-          icon: 'time-outline',
-          color: '#adaba7',
+          icon: 'time',
+          color: '#848483',
           text: 'Pendiente',
-          bgColor: '#FFF3E0'
+          bgColor: '#dddbd8'
         };
       case 'aceptado':
         return {
-          icon: 'checkmark-circle-outline',
+          icon: 'checkmark-circle',
           color: '#4CAF50',
           text: 'Aprobado',
           bgColor: '#E8F5E9'
         };
       case 'rechazado':
         return {
-          icon: 'close-circle-outline',
+          icon: 'close-circle',
           color: '#F44336',
           text: 'Rechazado',
           bgColor: '#FFEBEE'
@@ -47,6 +49,13 @@ const ReservationItem = ({
           text: 'Cancelado',
           bgColor: '#FFEBEE'
         };
+      case 'concluido':
+        return {
+          icon: 'checkmark',
+          color: '#f9f9f6',
+          text: 'Concluido',
+          bgColor: '#e1d54f'
+        }
       default:
         return {
           icon: 'help-circle-outline',
@@ -95,17 +104,17 @@ const ReservationItem = ({
           </View>
         </View>
 
-        {comentarios && (
+        {comentariosnego && (
           <View style={styles.commentsContainer}>
             <Text style={styles.commentsTitle}>Comentarios del negocio:</Text>
-            <Text style={styles.commentsText}>{comentarios}</Text>
+            <Text style={styles.commentsText}>{comentariosnego}</Text>
           </View>
         )}
 
         {estado === 'pendiente' && (
           <TouchableOpacity 
             style={styles.cancelButton}
-            onPress={onCancel}
+            onPress={() => onCancel(id)}
           >
             <Ionicons name="close-outline" size={20} color="#F44336" />
             <Text style={styles.cancelButtonText}>Cancelar reservación</Text>
@@ -125,12 +134,20 @@ const ReservationItem = ({
 };
 
 const ReservationsScreen = ({ navigation }) => {
+  const [alertConfig, setAlertConfig] = useState({
+    isVisible: false,
+    type: 'info',
+    title: '',
+    message: '',
+    buttons: []
+  });
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const { user } = useAuth();
 
+  
   const fetchReservations = async () => {
     if (!user?.uid) return;
     
@@ -178,25 +195,88 @@ const ReservationsScreen = ({ navigation }) => {
     }
   }, [user]);
 
-  const handleCancelReservation = (reservationId) => {
-    Alert.alert(
-      "Cancelar Reservación",
-      "¿Estás seguro que deseas cancelar esta reservación?",
-      [
+  const handleCancelReservation = async (reservationId) => {
+    setAlertConfig({
+      isVisible: true,
+      type: 'error',
+      title: 'Cancelar Reservación',
+      message: '¿Estás seguro que deseas cancelar esta reservación?',
+      buttons: [
         {
-          text: "No",
-          style: "cancel"
+          text: 'No',
+          color: '#666',
+          onPress: () => setAlertConfig(prev => ({ ...prev, isVisible: false }))
         },
         {
-          text: "Sí, cancelar",
-          style: "destructive",
-          onPress: () => {
-            // Implementar la lógica de cancelación aquí
-            console.log('Cancelando reservación:', reservationId);
+          text: 'Sí, cancelar',
+          color: '#F44336',
+          onPress: async () => {
+            try {
+              const response = await fetch(
+                `https://www.jaydey.com/ServicesMovil/api/cancel-reservation/${reservationId}`,
+                {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    userId: user.uid,
+                    token: user.id_token
+                  })
+                }
+              );
+  
+              const data = await response.json();
+              
+              if (data.success) {
+                setAlertConfig({
+                  isVisible: true,
+                  type: 'success',
+                  title: 'Éxito',
+                  message: 'La reservación ha sido cancelada correctamente',
+                  buttons: [
+                    {
+                      text: 'OK',
+                      onPress: () => {
+                        fetchReservations();
+                        setAlertConfig(prev => ({ ...prev, isVisible: false }));
+                      }
+                    }
+                  ]
+                });
+              } else {
+                setAlertConfig({
+                  isVisible: true,
+                  type: 'error',
+                  title: 'Error',
+                  message: data.message || 'No se pudo cancelar la reservación',
+                  buttons: [
+                    {
+                      text: 'OK',
+                      onPress: () => setAlertConfig(prev => ({ ...prev, isVisible: false }))
+                    }
+                  ]
+                });
+              }
+            } catch (error) {
+              console.error('Error al cancelar la reservación:', error);
+              setAlertConfig({
+                isVisible: true,
+                type: 'error',
+                title: 'Error',
+                message: 'Hubo un problema al cancelar la reservación. Por favor, intenta de nuevo.',
+                buttons: [
+                  {
+                    text: 'OK',
+                    onPress: () => setAlertConfig(prev => ({ ...prev, isVisible: false }))
+                  }
+                ]
+              });
+            }
           }
         }
       ]
-    );
+    });
   };
 
   if (!user?.uid) {
@@ -252,11 +332,11 @@ const ReservationsScreen = ({ navigation }) => {
         renderItem={({ item }) => (
           <ReservationItem 
             {...item}
-            onCancel={() => handleCancelReservation(item.id)}
-            onViewDetails={() => navigation.navigate('ReservationDetails', { reservation: item })}
+            onCancel={handleCancelReservation}
+            onViewDetails={() => navigation.navigate('Detalles', { reservation: item })}
           />
         )}
-        keyExtractor={(item, index) => index.toString()}
+        keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
         refreshControl={
           <RefreshControl
@@ -266,6 +346,14 @@ const ReservationsScreen = ({ navigation }) => {
             tintColor="#000"
           />
         }
+      />
+       <CustomAlert
+        isVisible={alertConfig.isVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isVisible: false }))}
       />
     </View>
   );
@@ -462,5 +550,4 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
-
 export default ReservationsScreen;
