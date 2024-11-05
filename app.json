@@ -11,6 +11,14 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "La aplicación necesita acceso a la cámara para tomar fotos."
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -19,7 +27,10 @@
         "foregroundImage": "./assets/iconmobi.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.danielglow.ExternalGlowApp"
+      "package": "com.danielglow.ExternalGlowApp",
+      "permissions": [
+        "CAMERA"
+      ]
     },
     "extra": {
       "eas": {
