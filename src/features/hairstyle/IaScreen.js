@@ -32,15 +32,23 @@ const estilos = [
     name: 'ManBun',
     displayName: 'Man Bun',
     description: 'Recogido en moño en la parte trasera',
-    image: require('../../../assets/logodani.jpg') 
+    image: require('../../../assets/manbun.jpg') 
   },
   { 
     id: '3', 
-    name: 'Undercut',
-    displayName: 'Under Cut',
-    description: 'Lados y parte trasera rapados con pelo largo arriba',
-    image: require('../../../assets/logodani.jpg') 
-  }
+    name: 'Pompadour',
+    displayName: 'Pompadour',
+    description: 'Volumen en la parte superior peinado hacia atrás',
+    image: require('../../../assets/popadour.jpg') 
+  },
+  { 
+    id: '4', 
+    name: 'UnderCut',
+    displayName: 'UnderCut',
+    description: 'Lados y parte trasera rapados con pelo más largo arriba',
+    image: require('../../../assets/undercut.png') 
+  },
+  
 ];
 
 function IaScreen() {
@@ -108,33 +116,105 @@ function IaScreen() {
     }
   };
 
+  const checkProcessingStatus = async (taskId) => {
+    try {
+      let attempts = 0;
+      const maxAttempts = 30;
+  
+      while (attempts < maxAttempts) {
+        console.log(`Verificando estado: intento ${attempts + 1}`);
+        
+        const response = await fetch(`${FLASK_API_URL}/api/check-hairstyle-status/${taskId}`);
+        const responseText = await response.text();
+        console.log('Respuesta del check status:', responseText);
+  
+        const data = JSON.parse(responseText);
+  
+        if (data.error || data.message?.toLowerCase().includes('error')) {
+          console.log('Error detectado en la respuesta:', data);
+          throw new Error('INVALID_IMAGE');
+        }
+  
+        if (data.task_status === 2 && data.firebase_url) {
+          setProcessedImage(data.firebase_url);
+          setIsProcessing(false);
+          break;
+        } else if (data.task_status === 0 || data.task_status === 1) {
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          attempts++;
+        } else if (data.task_status === -1 || data.task_status === 3) {
+          throw new Error('INVALID_IMAGE');
+        }
+      }
+  
+      if (attempts >= maxAttempts) {
+        throw new Error('TIMEOUT');
+      }
+    } catch (error) {
+      let errorMessage = 'No se pudo completar el procesamiento';
+      let errorTitle = 'Error';
+  
+      if (error.message === 'INVALID_IMAGE') {
+        errorTitle = 'Lo sentimos';
+        errorMessage = 'Su imagen no es válida para procesar. Por favor, asegúrese de que la foto muestre claramente su rostro y vuelva a intentarlo.';
+      } else if (error.message === 'TIMEOUT') {
+        errorMessage = 'El procesamiento está tomando demasiado tiempo. Por favor, intente nuevamente.';
+      }
+  
+      Alert.alert(
+        errorTitle,
+        errorMessage,
+        [
+          {
+            text: 'Reintentar',
+            onPress: () => {
+              setIsProcessing(false);
+              setShowPreview(true); 
+            }
+          },
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+            onPress: () => {
+              setIsProcessing(false);
+              setShowPreview(false);
+              setSelectedImage(null);
+              setSelectedStyle(null);
+              setProcessedImage(null);
+            }
+          }
+        ]
+      );
+    }
+  };
+  
   const processImage = async () => {
     if (!selectedImage || !selectedStyle) return;
-
+  
     setIsProcessing(true);
     setShowPreview(false);
-
+  
     try {
       console.log('Preparando imagen para procesar:', selectedImage.uri);
-      
+        
       const fileInfo = await FileSystem.getInfoAsync(selectedImage.uri);
       if (!fileInfo.exists) {
-        throw new Error('El archivo de imagen no existe');
+        throw new Error('IMAGE_NOT_FOUND');
       }
-
+  
       const base64Image = await FileSystem.readAsStringAsync(selectedImage.uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
-
+  
       const requestData = {
         image: `data:image/jpeg;base64,${base64Image}`,
         hair_style: selectedStyle.name,
         userId: user?.uid || 'anonymous'
       };
-
+  
       console.log('Enviando request con estilo:', selectedStyle.name);
       console.log('Request data:', JSON.stringify(requestData, null, 2));
-
+  
       const response = await fetch(`${FLASK_API_URL}/api/process-hairstyle`, {
         method: 'POST',
         headers: {
@@ -143,62 +223,65 @@ function IaScreen() {
         },
         body: JSON.stringify(requestData)
       });
-
+  
       const responseText = await response.text();
       console.log('Respuesta completa del servidor:', responseText);
-
+  
       const data = JSON.parse(responseText);
-
-      if (!data.success) {
-        throw new Error(data.message || 'Error en la respuesta del servidor');
+  
+      if (!data.success || !data.task_id) {
+        throw new Error('INVALID_REQUEST');
       }
-
+  
       await checkProcessingStatus(data.task_id);
-
+  
     } catch (error) {
       console.error('Error detallado en processImage:', error);
-      Alert.alert(
-        'Error',
-        error.message || 'Ocurrió un error al procesar la imagen',
-        [{ text: 'Entendido' }]
-      );
-      setIsProcessing(false);
-    }
-  };
-
-  const checkProcessingStatus = async (taskId) => {
-    try {
-      let attempts = 0;
-      const maxAttempts = 30;
-
-      while (attempts < maxAttempts) {
-        console.log(`Verificando estado: intento ${attempts + 1}`);
-        
-        const response = await fetch(`${FLASK_API_URL}/api/check-hairstyle-status/${taskId}`);
-        const data = await response.json();
-
-        if (data.task_status === 2 && data.firebase_url) {
-          setProcessedImage(data.firebase_url);
-          setIsProcessing(false);
+      
+      let errorMessage = 'Ocurrió un error al procesar la imagen';
+      let errorTitle = 'Error';
+  
+      switch (error.message) {
+        case 'IMAGE_NOT_FOUND':
+          errorMessage = 'No se pudo acceder a la imagen seleccionada';
           break;
-        } else if (data.task_status === 0 || data.task_status === 1) {
-          await new Promise(resolve => setTimeout(resolve, 5000));
-          attempts++;
-        } else {
-          throw new Error('Estado de procesamiento inválido');
-        }
+        case 'INVALID_REQUEST':
+          errorTitle = 'Lo sentimos';
+          errorMessage = 'No se pudo iniciar el procesamiento de la imagen. Por favor, intente con otra foto.';
+          break;
+        case 'INVALID_IMAGE':
+          errorTitle = 'Lo sentimos';
+          errorMessage = 'Su imagen no es válida para procesar. Por favor, asegúrese de que la foto muestre claramente su rostro.';
+          break;
       }
-
-      if (attempts >= maxAttempts) {
-        throw new Error('Tiempo de procesamiento excedido');
-      }
-    } catch (error) {
-      console.error('Error en checkProcessingStatus:', error);
-      Alert.alert('Error', 'No se pudo completar el procesamiento');
-      setIsProcessing(false);
+  
+      Alert.alert(
+        errorTitle,
+        errorMessage,
+        [
+          {
+            text: 'Reintentar',
+            onPress: () => {
+              setIsProcessing(false);
+              setShowPreview(true);  // Volver a mostrar la vista previa
+            }
+          },
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+            onPress: () => {
+              // Limpiar todos los estados
+              setIsProcessing(false);
+              setShowPreview(false);
+              setSelectedImage(null);
+              setSelectedStyle(null);
+              setProcessedImage(null);
+            }
+          }
+        ]
+      );
     }
   };
-
   const renderItem = ({ item }) => (
     <TouchableOpacity 
       style={styles.itemContainer}
