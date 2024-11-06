@@ -10,6 +10,7 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
+  Dimensions,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -19,6 +20,8 @@ import { hairstyles } from "../../data/hairstyle";
 import NoAuthScreen from '../../components/common/NotAuthScreen';
 
 const FLASK_API_URL = "https://www.jaydey.com/ServicesMovil";
+const windowWidth = Dimensions.get('window').width;
+const windowHeight = Dimensions.get('window').height;
 
 function IaScreen({ navigation }) {
   const [selectedStyle, setSelectedStyle] = useState(null);
@@ -26,8 +29,9 @@ function IaScreen({ navigation }) {
   const [showPreview, setShowPreview] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedImage, setProcessedImage] = useState(null);
+  const [showZoomModal, setShowZoomModal] = useState(false);
+  const [zoomImage, setZoomImage] = useState(null);
   const { user } = useAuth();
-
 
   useEffect(() => {
     requestPermissions();
@@ -198,21 +202,30 @@ function IaScreen({ navigation }) {
     }
   };
 
+  const handleImagePress = (imageUri) => {
+    setZoomImage(imageUri);
+    setShowZoomModal(true);
+  };
+
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.itemContainer}
       onPress={() => pickImage(item)}
     >
-      <Image source={item.image} style={styles.image} />
+      <TouchableOpacity onPress={() => handleImagePress(item.image)}>
+        <Image source={item.image} style={styles.image} />
+      </TouchableOpacity>
       <View style={styles.textContainer}>
         <Text style={styles.name}>{item.displayName}</Text>
         <Text style={styles.description}>{item.description}</Text>
       </View>
     </TouchableOpacity>
   );
+
   if (!user?.uid) {
     return <NoAuthScreen navigation={navigation} />;
   }
+
   if (isProcessing) {
     return (
       <View style={styles.processingContainer}>
@@ -225,7 +238,6 @@ function IaScreen({ navigation }) {
       </View>
     );
   }
-
 
   return (
     <SafeAreaView style={styles.container}>
@@ -251,21 +263,27 @@ function IaScreen({ navigation }) {
         <View style={styles.resultContainer}>
           <Text style={styles.resultTitle}>Resultado</Text>
           <View style={styles.imagesContainer}>
-            <View style={styles.resultImageContainer}>
+            <TouchableOpacity 
+              style={styles.resultImageContainer}
+              onPress={() => handleImagePress(selectedImage.uri)}
+            >
               <Image
                 source={{ uri: selectedImage.uri }}
                 style={styles.resultImage}
                 resizeMode="cover"
               />
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.resultImageContainer}>
+            <TouchableOpacity 
+              style={styles.resultImageContainer}
+              onPress={() => handleImagePress(processedImage)}
+            >
               <Image
                 source={{ uri: processedImage }}
                 style={styles.resultImage}
                 resizeMode="cover"
               />
-            </View>
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -277,6 +295,7 @@ function IaScreen({ navigation }) {
         </View>
       )}
 
+      {/* Preview Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -287,10 +306,12 @@ function IaScreen({ navigation }) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{selectedStyle?.displayName}</Text>
 
-            <Image
-              source={{ uri: selectedImage?.uri }}
-              style={styles.previewImage}
-            />
+            <TouchableOpacity onPress={() => handleImagePress(selectedImage?.uri)}>
+              <Image
+                source={{ uri: selectedImage?.uri }}
+                style={styles.previewImage}
+              />
+            </TouchableOpacity>
 
             <Text style={styles.modalDescription}>
               {selectedStyle?.description}
@@ -314,9 +335,30 @@ function IaScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+
+      {/* Zoom Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showZoomModal}
+        onRequestClose={() => setShowZoomModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.zoomModalContainer}
+          activeOpacity={1}
+          onPress={() => setShowZoomModal(false)}
+        >
+          <Image
+            source={typeof zoomImage === 'string' ? { uri: zoomImage } : zoomImage}
+            style={styles.zoomImage}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -497,6 +539,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  zoomModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomImage: {
+    width: windowWidth,
+    height: windowHeight * 0.8,
   },
 });
 

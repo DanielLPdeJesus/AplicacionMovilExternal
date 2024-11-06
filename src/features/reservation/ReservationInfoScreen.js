@@ -1,11 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, RefreshControl, Alert} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, RefreshControl, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import NoAuthScreen from '../../components/common/NotAuthScreen';
 import CustomAlert from '../../components/common/CustomAlert';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    priority: Notifications.AndroidNotificationPriority.HIGH,
+  }),
+});
 
 const ReservationItem = ({ 
   tipo_de_servicio, 
@@ -145,9 +157,132 @@ const ReservationsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [lastKnownStates, setLastKnownStates] = useState({});
   const { user } = useAuth();
 
-  
+  // Configuración inicial de notificaciones
+  useEffect(() => {
+    registerForPushNotifications();
+    setupNotificationChannels();
+    const notificationListener = setupNotificationListeners();
+    
+    return () => {
+      if (notificationListener) {
+        Notifications.removeNotificationSubscription(notificationListener);
+      }
+    };
+  }, []);
+
+  const setupNotificationChannels = async () => {
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('reservations', {
+        name: 'Reservaciones',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+        sound: true,
+      });
+    }
+  };
+
+  const registerForPushNotifications = async () => {
+    if (!Device.isDevice) {
+      console.log('Notificaciones solo disponibles en dispositivos físicos');
+      return;
+    }
+
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        console.log('No se obtuvieron permisos para las notificaciones');
+        return;
+      }
+    } catch (error) {
+      console.error('Error al registrar notificaciones:', error);
+    }
+  };
+
+  const setupNotificationListeners = () => {
+    return Notifications.addNotificationReceivedListener(notification => {
+      console.log('Notificación recibida:', notification);
+    });
+  };
+
+  const sendNotification = async (title, body, data = {}) => {
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          data,
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+        },
+        trigger: null,
+      });
+    } catch (error) {
+      console.error('Error al enviar notificación:', error);
+    }
+  };
+
+  const checkStateChanges = async (currentReservations) => {
+    try {
+      const storedStates = await AsyncStorage.getItem('reservationStates');
+      const previousStates = storedStates ? JSON.parse(storedStates) : {};
+      const newStates = {};
+
+      for (const reservation of currentReservations) {
+        newStates[reservation.id] = reservation.estado;
+        const previousState = previousStates[reservation.id];
+
+        if (previousState && previousState !== reservation.estado) {
+          const notification = getNotificationContent(reservation, previousState);
+          await sendNotification(
+            notification.title,
+            notification.body,
+            { reservationId: reservation.id }
+          );
+        }
+      }
+
+      await AsyncStorage.setItem('reservationStates', JSON.stringify(newStates));
+      setLastKnownStates(newStates);
+    } catch (error) {
+      console.error('Error al verificar cambios de estado:', error);
+    }
+  };
+
+  const getNotificationContent = (reservation, previousState) => {
+    const baseTitle = '¡Actualización de tu reservación!';
+    let body = '';
+
+    switch(reservation.estado.toLowerCase()) {
+      case 'aceptado':
+        body = `Tu reservación de ${reservation.tipo_de_servicio} ha sido aprobada. 🎉`;
+        break;
+      case 'rechazado':
+        body = `Lo sentimos, tu reservación de ${reservation.tipo_de_servicio} ha sido rechazada. ❌`;
+        break;
+      case 'cancelado':
+        body = `Tu reservación de ${reservation.tipo_de_servicio} ha sido cancelada. ⚠️`;
+        break;
+      case 'concluido':
+        body = `¡Tu reservación de ${reservation.tipo_de_servicio} ha sido completada! ¡Gracias por tu preferencia! ✨`;
+        break;
+      default:
+        body = `El estado de tu reservación ha cambiado de ${previousState} a ${reservation.estado}`;
+    }
+
+    return { title: baseTitle, body };
+  };
+
   const fetchReservations = async () => {
     if (!user?.uid) return;
     
@@ -170,6 +305,7 @@ const ReservationsScreen = ({ navigation }) => {
           new Date(b.fecha_creacion) - new Date(a.fecha_creacion)
         );
         setReservations(sortedReservations);
+        await checkStateChanges(sortedReservations);
       } else {
         setError('No se pudieron cargar las reservaciones');
       }
@@ -181,6 +317,13 @@ const ReservationsScreen = ({ navigation }) => {
       setRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    if (user?.uid) {
+      const intervalId = setInterval(fetchReservations, 30000); // Cada 30 segundos
+      return () => clearInterval(intervalId);
+    }
+  }, [user]);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -279,42 +422,25 @@ const ReservationsScreen = ({ navigation }) => {
     });
   };
 
-  if (!user?.uid) {
-    return <NoAuthScreen navigation={navigation} />;
-  }
-
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#000" />
-      </View>
-    );
-  }
-
+  if (!user?.uid) return <NoAuthScreen navigation={navigation} />;
+  if (loading) return <View style={styles.centerContainer}><ActivityIndicator size="large" color="#000" /></View>;
   if (error) {
     return (
       <View style={styles.centerContainer}>
         <Ionicons name="alert-circle-outline" size={48} color="#F44336" />
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity 
-          style={styles.retryButton} 
-          onPress={fetchReservations}
-        >
+        <TouchableOpacity style={styles.retryButton} onPress={fetchReservations}>
           <Text style={styles.retryButtonText}>Intentar de nuevo</Text>
         </TouchableOpacity>
       </View>
     );
   }
-
   if (reservations.length === 0) {
     return (
       <View style={styles.centerContainer}>
         <Ionicons name="calendar-outline" size={48} color="#666" />
         <Text style={styles.noReservationsText}>No tienes reservaciones activas</Text>
-        <TouchableOpacity 
-          style={styles.refreshButton}
-          onPress={fetchReservations}
-        >
+        <TouchableOpacity style={styles.refreshButton} onPress={fetchReservations}>
           <Ionicons name="refresh-outline" size={20} color="#FFF" />
           <Text style={styles.refreshButtonText}>Actualizar</Text>
         </TouchableOpacity>
@@ -347,7 +473,7 @@ const ReservationsScreen = ({ navigation }) => {
           />
         }
       />
-       <CustomAlert
+      <CustomAlert
         isVisible={alertConfig.isVisible}
         type={alertConfig.type}
         title={alertConfig.title}

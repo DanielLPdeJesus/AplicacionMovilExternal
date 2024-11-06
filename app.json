@@ -11,11 +11,23 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "plugins": [
       [
-        "expo-camera",
+        "expo-notifications",
         {
-          "cameraPermission": "La aplicación necesita acceso a la cámara para tomar fotos."
+          "icon": "./assets/icono-noti.png",
+          "color": "#ffffff"
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "@expo/vector-icons/Ionicons"
+          ]
         }
       ]
     ],
@@ -29,7 +41,9 @@
       },
       "package": "com.danielglow.ExternalGlowApp",
       "permissions": [
-        "CAMERA"
+        "CAMERA",
+        "NOTIFICATIONS",
+        "VIBRATE"
       ]
     },
     "extra": {
