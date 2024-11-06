@@ -16,10 +16,11 @@ import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
 import { useAuth } from "../../context/AuthContext";
 import { hairstyles } from "../../data/hairstyle";
+import NoAuthScreen from '../../components/common/NotAuthScreen';
 
 const FLASK_API_URL = "https://www.jaydey.com/ServicesMovil";
 
-function IaScreen() {
+function IaScreen({ navigation }) {
   const [selectedStyle, setSelectedStyle] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -27,10 +28,12 @@ function IaScreen() {
   const [processedImage, setProcessedImage] = useState(null);
   const { user } = useAuth();
 
+
   useEffect(() => {
     requestPermissions();
   }, []);
 
+ 
   const requestPermissions = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -207,7 +210,9 @@ function IaScreen() {
       </View>
     </TouchableOpacity>
   );
-
+  if (!user?.uid) {
+    return <NoAuthScreen navigation={navigation} />;
+  }
   if (isProcessing) {
     return (
       <View style={styles.processingContainer}>
@@ -220,6 +225,7 @@ function IaScreen() {
       </View>
     );
   }
+
 
   return (
     <SafeAreaView style={styles.container}>

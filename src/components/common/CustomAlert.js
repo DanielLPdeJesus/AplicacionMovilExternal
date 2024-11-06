@@ -22,7 +22,7 @@ const CustomAlert = ({ isVisible, type, title, message, buttons, onClose }) => {
       case 'success':
         return { colors: ['#4CAF50', '#45a049'], icon: 'check-circle-outline' };
       case 'error':
-        return { colors: ['#FF5252', '#FF1744'], icon: 'alert-circle-outline' };
+        return { colors: ['#e99f9f', '#f1708a'], icon: 'alert-circle-outline' };
       case 'info':
         return { colors: ['#2196F3', '#1E88E5'], icon: 'information-outline' };
       default:
