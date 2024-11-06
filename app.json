@@ -4,10 +4,10 @@
     "slug": "ExternalGlowApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/iconmobi.png",
+    "icon": "./assets/iconresulocion.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splashredimencioando.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -24,7 +24,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/iconmobi.png",
+        "foregroundImage": "./assets/iconresulocion.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.danielglow.ExternalGlowApp",

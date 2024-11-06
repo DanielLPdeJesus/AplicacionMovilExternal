@@ -140,7 +140,7 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
         <Image
           source={{ uri: reservation.imagen_url }}
           style={styles.mainImage}
-          defaultSource={require('../../../assets/logo.png')}
+          defaultSource={require('../../../assets/iconresulocion.png')}
         />
       </View>
 
@@ -151,7 +151,7 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
             <Image 
               source={{ uri: businessData.logo_url }}
               style={styles.businessLogo}
-              defaultSource={require('../../../assets/logo.png')}
+              defaultSource={require('../../../assets/iconresulocion.png')}
             />
             <View style={styles.businessInfo}>
               <Text style={styles.businessName}>{businessData.nombre}</Text>

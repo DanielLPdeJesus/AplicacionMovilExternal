@@ -4,9 +4,9 @@ import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 const NoAuthScreen = ({ navigation }) => (
   <View style={styles.noAuthContainer}>
     <Image 
-      source={require('../../../assets/logo.png')} 
+      source={require('../../../assets/iconresulocion.png')} 
       style={styles.placeholderImage}
-      defaultSource={require('../../../assets/logodani.jpg')}
+      defaultSource={require('../../../assets/iconresulocion.png')}
     />
     <Text style={styles.noAuthTitle}>¡Bienvenido!</Text>
     <Text style={styles.noAuthDescription}>

@@ -5,7 +5,7 @@ const WelcomeComponent = () => {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../../assets/logo.png')}
+        source={require('../../../assets/iconresulocion.png')}
         style={styles.image}
       />
       <View style={styles.textContainer}>
