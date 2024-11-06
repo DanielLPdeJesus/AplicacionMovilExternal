@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -14,10 +15,11 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
-import { AntDesign } from "@expo/vector-icons";
 import { useAuth } from "../../context/AuthContext";
 
 const FLASK_API_URL = "https://www.jaydey.com/ServicesMovil";
+
+
 
 const estilos = [
   {
@@ -112,13 +114,13 @@ const estilos = [
     image: require("../../../assets/curlebob.jpg"),
   }
 ];
+
 function IaScreen() {
   const [selectedStyle, setSelectedStyle] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedImage, setProcessedImage] = useState(null);
-  const [isImageLoading, setIsImageLoading] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -143,14 +145,7 @@ function IaScreen() {
     try {
       const manipResult = await ImageManipulator.manipulateAsync(
         imageUri,
-        [
-          {
-            resize: {
-              width: 2000,
-              height: 2000,
-            },
-          },
-        ],
+        [{ resize: { width: 2000, height: 2000 } }],
         { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
       );
       return manipResult;
@@ -187,18 +182,12 @@ function IaScreen() {
       const maxAttempts = 30;
 
       while (attempts < maxAttempts) {
-        console.log(`Verificando estado: intento ${attempts + 1}`);
-
         const response = await fetch(
           `${FLASK_API_URL}/api/check-hairstyle-status/${taskId}`
         );
-        const responseText = await response.text();
-        console.log("Respuesta del check status:", responseText);
-
-        const data = JSON.parse(responseText);
+        const data = JSON.parse(await response.text());
 
         if (data.error || data.message?.toLowerCase().includes("error")) {
-          console.log("Error detectado en la respuesta:", data);
           throw new Error("INVALID_IMAGE");
         }
 
@@ -218,39 +207,45 @@ function IaScreen() {
         throw new Error("TIMEOUT");
       }
     } catch (error) {
-      let errorMessage = "No se pudo completar el procesamiento";
-      let errorTitle = "Error";
-
-      if (error.message === "INVALID_IMAGE") {
-        errorTitle = "Lo sentimos";
-        errorMessage =
-          "Su imagen no es válida para procesar. Por favor, asegúrese de que la foto muestre claramente su rostro y vuelva a intentarlo.";
-      } else if (error.message === "TIMEOUT") {
-        errorMessage =
-          "El procesamiento está tomando demasiado tiempo. Por favor, intente nuevamente.";
-      }
-
-      Alert.alert(errorTitle, errorMessage, [
-        {
-          text: "Reintentar",
-          onPress: () => {
-            setIsProcessing(false);
-            setShowPreview(true);
-          },
-        },
-        {
-          text: "Cancelar",
-          style: "cancel",
-          onPress: () => {
-            setIsProcessing(false);
-            setShowPreview(false);
-            setSelectedImage(null);
-            setSelectedStyle(null);
-            setProcessedImage(null);
-          },
-        },
-      ]);
+      handleProcessingError(error);
     }
+  };
+
+  const handleProcessingError = (error) => {
+    let errorMessage = "No se pudo completar el procesamiento";
+    let errorTitle = "Error";
+
+    if (error.message === "INVALID_IMAGE") {
+      errorTitle = "Lo sentimos";
+      errorMessage =
+        "Su imagen no es válida para procesar. Por favor, asegúrese de que la foto muestre claramente su rostro y vuelva a intentarlo.";
+    } else if (error.message === "TIMEOUT") {
+      errorMessage =
+        "El procesamiento está tomando demasiado tiempo. Por favor, intente nuevamente.";
+    }
+
+    Alert.alert(errorTitle, errorMessage, [
+      {
+        text: "Reintentar",
+        onPress: () => {
+          setIsProcessing(false);
+          setShowPreview(true);
+        },
+      },
+      {
+        text: "Cancelar",
+        style: "cancel",
+        onPress: resetState,
+      },
+    ]);
+  };
+
+  const resetState = () => {
+    setIsProcessing(false);
+    setShowPreview(false);
+    setSelectedImage(null);
+    setSelectedStyle(null);
+    setProcessedImage(null);
   };
 
   const processImage = async () => {
@@ -260,8 +255,6 @@ function IaScreen() {
     setShowPreview(false);
 
     try {
-      console.log("Preparando imagen para procesar:", selectedImage.uri);
-
       const fileInfo = await FileSystem.getInfoAsync(selectedImage.uri);
       if (!fileInfo.exists) {
         throw new Error("IMAGE_NOT_FOUND");
@@ -277,8 +270,6 @@ function IaScreen() {
         userId: user?.uid || "anonymous",
       };
 
-      console.log("Enviando request con estilo:", selectedStyle.name);
-
       const response = await fetch(`${FLASK_API_URL}/api/process-hairstyle`, {
         method: "POST",
         headers: {
@@ -288,10 +279,7 @@ function IaScreen() {
         body: JSON.stringify(requestData),
       });
 
-      const responseText = await response.text();
-      console.log("Respuesta completa del servidor:", responseText);
-
-      const data = JSON.parse(responseText);
+      const data = JSON.parse(await response.text());
 
       if (!data.success || !data.task_id) {
         throw new Error("INVALID_REQUEST");
@@ -299,47 +287,7 @@ function IaScreen() {
 
       await checkProcessingStatus(data.task_id);
     } catch (error) {
-      console.error("Error detallado en processImage:", error);
-
-      let errorMessage = "Ocurrió un error al procesar la imagen";
-      let errorTitle = "Error";
-
-      switch (error.message) {
-        case "IMAGE_NOT_FOUND":
-          errorMessage = "No se pudo acceder a la imagen seleccionada";
-          break;
-        case "INVALID_REQUEST":
-          errorTitle = "Lo sentimos";
-          errorMessage =
-            "No se pudo iniciar el procesamiento de la imagen. Por favor, intente con otra foto.";
-          break;
-        case "INVALID_IMAGE":
-          errorTitle = "Lo sentimos";
-          errorMessage =
-            "Su imagen no es válida para procesar. Por favor, asegúrese de que la foto muestre claramente su rostro.";
-          break;
-      }
-
-      Alert.alert(errorTitle, errorMessage, [
-        {
-          text: "Reintentar",
-          onPress: () => {
-            setIsProcessing(false);
-            setShowPreview(true);
-          },
-        },
-        {
-          text: "Cancelar",
-          style: "cancel",
-          onPress: () => {
-            setIsProcessing(false);
-            setShowPreview(false);
-            setSelectedImage(null);
-            setSelectedStyle(null);
-            setProcessedImage(null);
-          },
-        },
-      ]);
+      handleProcessingError(error);
     }
   };
 
@@ -358,12 +306,12 @@ function IaScreen() {
 
   if (isProcessing) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.processingContainer}>
         <ActivityIndicator size="large" color="#000" />
-        <Text style={styles.loadingText}>
-          Procesando imagen...{"\n"}
-          Esto puede tomar unos minutos{"\n"}
-          Disculpe la demora, estamos trabajando para obtener el mejor resultado
+        <Text style={styles.processingTitle}>Procesando imagen...</Text>
+        <Text style={styles.processingText}>
+          Espere un momento{'\n'}
+          Disculpe la demora
         </Text>
       </View>
     );
@@ -402,61 +350,20 @@ function IaScreen() {
             </View>
 
             <View style={styles.resultImageContainer}>
-              {isImageLoading ? (
-                <View style={styles.imageLoadingContainer}>
-                  <ActivityIndicator size="large" color="#000" />
-                  <Text style={styles.imageLoadingText}>
-                    Cargando imagen...{"\n"}
-                    Por favor, espere{"\n"}
-                    Disculpe la demora
-                  </Text>
-                </View>
-              ) : (
-                <Image
-                  source={{ uri: processedImage }}
-                  style={styles.resultImage}
-                  resizeMode="cover"
-                  onLoadStart={() => setIsImageLoading(true)}
-                  onLoadEnd={() => setIsImageLoading(false)}
-                />
-              )}
+              <Image
+                source={{ uri: processedImage }}
+                style={styles.resultImage}
+                resizeMode="cover"
+              />
             </View>
           </View>
 
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[
-                styles.backButton,
-                isImageLoading && styles.backButtonDisabled
-              ]}
-              onPress={() => {
-                if (!isImageLoading) {
-                  setProcessedImage(null);
-                  setSelectedImage(null);
-                  setSelectedStyle(null);
-                }
-              }}
-              disabled={isImageLoading}
-            >
-              <View style={styles.buttonContent}>
-                {isImageLoading && (
-                  <ActivityIndicator 
-                    size="small" 
-                    color="#666" 
-                    style={styles.buttonLoader} 
-                  />
-                )}
-                <Text 
-                  style={[
-                    styles.backButtonText,
-                    isImageLoading && styles.backButtonTextDisabled
-                  ]}
-                >
-                  {isImageLoading ? 'Cargando...' : 'Probar Otro Estilo'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={resetState}
+          >
+            <Text style={styles.backButtonText}>Probar Otro Estilo</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -506,18 +413,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
-  loadingContainer: {
+  processingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#fff",
   },
-  loadingText: {
+  processingTitle: {
+    fontSize: 20,
+    fontWeight: "600",
     marginTop: 20,
+    marginBottom: 10,
+    color: "#000",
+  },
+  processingText: {
     fontSize: 16,
-    textAlign: "center",
     color: "#666",
-    paddingHorizontal: 20,
+    textAlign: "center",
     lineHeight: 24,
+    marginTop: 10,
   },
   avisoContainer: {
     backgroundColor: "#f8f8f8",
@@ -636,7 +550,6 @@ const styles = StyleSheet.create({
   resultContainer: {
     flex: 1,
     padding: 16,
-    position: 'relative',
   },
   resultTitle: {
     fontSize: 20,
@@ -663,52 +576,18 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 10,
   },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 16,
-    right: 16,
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonLoader: {
-    marginRight: 8,
-  },
   backButton: {
     backgroundColor: '#000',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
-  },
-  backButtonDisabled: {
-    backgroundColor: '#cccccc',
+    marginTop: 20,
   },
   backButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
-  backButtonTextDisabled: {
-    color: '#666666',
-  },
-  imageLoadingContainer: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 10,
-  },
-  imageLoadingText: {
-    marginTop: 10,
-    textAlign: 'center',
-    color: '#666',
-    fontSize: 14,
-    paddingHorizontal: 10,
-  }
 });
 
 export default IaScreen;
