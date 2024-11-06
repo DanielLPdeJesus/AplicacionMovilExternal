@@ -145,6 +145,21 @@ const ViewBussinesScreen = ({ route, navigation }) => {
     }
   };
 
+  const handleOpenGoogleMaps = () => {
+    if (business && business.plus_code) {
+      const locationQuery = encodeURIComponent(business.plus_code);
+      const url = `https://www.google.com/maps/search/?api=1&query=${locationQuery}`;
+      
+      Linking.canOpenURL(url).then(supported => {
+        if (supported) {
+          Linking.openURL(url);
+        } else {
+          console.log("No se puede abrir Google Maps");
+        }
+      }).catch(err => console.error('Error al abrir Google Maps:', err));
+    }
+  };
+
   const calculateRating = (likes, dislikes) => {
     const total = likes + dislikes;
     if (total === 0) return 0;
@@ -243,28 +258,34 @@ const ViewBussinesScreen = ({ route, navigation }) => {
             )}
           </View>
         );
-      case 'contact':
-        return (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Información de Contacto</Text>
-            <TouchableOpacity style={styles.contactItem} onPress={handlePhoneCall}>
-              <Ionicons name="call-outline" size={24} color="#007AFF" />
-              <Text style={styles.contactText}>{business.phone_number}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.contactItem} onPress={handleWhatsApp}>
-              <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
-              <Text style={styles.contactText}>WhatsApp</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.contactItem} onPress={handleEmail}>
-              <Ionicons name="mail-outline" size={24} color="#007AFF" />
-              <Text style={styles.contactText}>{business.email}</Text>
-            </TouchableOpacity>
-            <View style={styles.contactItem}>
-              <Ionicons name="location-outline" size={24} color="#007AFF" />
-              <Text style={styles.contactText}>{business.business_address}</Text>
+        case 'contact':
+          return (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Información de Contacto</Text>
+              <TouchableOpacity style={styles.contactItem} onPress={handlePhoneCall}>
+                <Ionicons name="call-outline" size={24} color="#007AFF" />
+                <Text style={styles.contactText}>{business.phone_number}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.contactItem} onPress={handleWhatsApp}>
+                <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
+                <Text style={styles.contactText}>WhatsApp</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.contactItem} onPress={handleEmail}>
+                <Ionicons name="mail-outline" size={24} color="#007AFF" />
+                <Text style={styles.contactText}>{business.email}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.contactItem} onPress={handleOpenGoogleMaps}>
+                <Ionicons name="location-outline" size={24} color="#007AFF" />
+                <Text style={styles.contactText}>{business.business_address}</Text>
+              </TouchableOpacity>
+              {business.plus_code && (
+                <TouchableOpacity style={styles.contactItem} onPress={handleOpenGoogleMaps}>
+                  <Ionicons name="navigate-outline" size={24} color="#007AFF" />
+                  <Text style={styles.contactText}>Ver en Google Maps{business.plus_code}</Text>
+                </TouchableOpacity>
+              )}
             </View>
-          </View>
-        );
+          );
       case 'reviews':
         return (
           <View style={styles.section}>
