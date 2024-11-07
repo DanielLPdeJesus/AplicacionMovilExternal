@@ -1,10 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, RefreshControl, TextInput } from 'react-native';
+import { 
+  View, 
+  Text, 
+  Image, 
+  TouchableOpacity, 
+  FlatList, 
+  StyleSheet, 
+  RefreshControl, 
+  TextInput,
+  ActivityIndicator 
+} from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { useAuth } from '../../context/AuthContext';
+import CustomAlert from '../../components/common/CustomAlert';
+
+const API_URL = 'https://www.jaydey.com/ServicesMovil';
 
 const BusinessRating = ({ business }) => {
+  const calculateRating = (likes, dislikes) => {
+    const total = likes + dislikes;
+    if (total === 0) return 0;
+    // Convertimos la proporción de likes a una escala de 5 estrellas
+    return (likes / total) * 5;
+  };
+
   const renderStars = () => {
-    const starCount = Math.min(Math.floor(business.numero_gustas / 10), 5);
+    const rating = calculateRating(
+      business.numero_gustas || 0,
+      business.no_me_gustas || 0
+    );
+    const starCount = Math.round(rating); // Redondeamos para obtener número entero de estrellas
     const stars = [];
 
     for (let i = 0; i < 5; i++) {
@@ -24,13 +49,24 @@ const BusinessRating = ({ business }) => {
   return (
     <View style={styles.ratingContainer}>
       {renderStars()}
+      <Text style={styles.ratingText}>
+        {calculateRating(
+          business.numero_gustas || 0,
+          business.no_me_gustas || 0
+        ).toFixed(1)}
+      </Text>
     </View>
   );
 };
 
+
+
 const NewBusinessBanner = ({ business }) => (
   <View style={styles.newBusinessBanner}>
-    <Image source={{ uri: business.perfiles_imagenes }} style={styles.newIcon} />
+    <Image 
+      source={{ uri: business.perfiles_imagenes }} 
+      style={styles.newIcon} 
+    />
     <View style={styles.newBusinessInfo}>
       <Text style={styles.newBusinessName}>{business.nombre_negocio}</Text>
       <Text style={styles.newBusinessAddress}>{business.direccion_negocio}</Text>
@@ -42,32 +78,151 @@ const BusinessCard = ({ business, navigation }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
   const [likeCount, setLikeCount] = useState(business.numero_gustas || 0);
-  const [commentCount, setCommentCount] = useState(business.numero_comentarios || 0);
+  const [dislikeCount, setDislikeCount] = useState(business.no_me_gustas || 0);
+  const [isInteracting, setIsInteracting] = useState(false);
+  const { user } = useAuth();
+  const [alertConfig, setAlertConfig] = useState({
+    isVisible: false,
+    type: '',
+    title: '',
+    message: '',
+    buttons: []
+  });
 
-  const handleLike = () => {
-    if (isLiked) {
-      setLikeCount(prev => prev - 1);
-    } else {
-      setLikeCount(prev => prev + 1);
-      if (isDisliked) {
+  const showAlert = (type, title, message, buttons) => {
+    setAlertConfig({
+      isVisible: true,
+      type,
+      title,
+      message,
+      buttons
+    });
+  };
+
+  useEffect(() => {
+    if (user) {
+      checkUserInteraction();
+    }
+  }, [user?.uid, business.id]);
+
+  const checkUserInteraction = async () => {
+    if (!user || !business.id) return;
+    
+    try {
+      const response = await fetch(
+        `${API_URL}/api/business-interactions/${business.id}/${user.uid}`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+  
+      if (!response.ok) {
+        setIsLiked(false);
+        setIsDisliked(false);
+        return;
+      }
+  
+      const data = await response.json();
+      
+      if (data.success && data.interaction) {
+        setIsLiked(data.interaction.type === 'like');
+        setIsDisliked(data.interaction.type === 'dislike');
+      } else {
+        setIsLiked(false);
         setIsDisliked(false);
       }
+    } catch (error) {
+      setIsLiked(false);
+      setIsDisliked(false);
     }
-    setIsLiked(!isLiked);
-    
   };
-
-  const handleDislike = () => {
-    if (isDisliked) {
-      if (isLiked) {
-        setLikeCount(prev => prev - 1);
+  
+  const handleInteraction = async (type) => {
+    if (!user) {
+      showAlert('error', 'Iniciar sesión requerido', 'Para dar like o dislike, por favor inicia sesión o regístrate.', [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+          onPress: () => setAlertConfig(prev => ({ ...prev, isVisible: false }))
+        },
+        {
+          text: 'Iniciar Sesión',
+          onPress: () => {
+            setAlertConfig(prev => ({ ...prev, isVisible: false }));
+            navigation.navigate('Login');
+          }
+        }
+      ]);
+      return;
+    }
+  
+    if (isInteracting) return;
+    setIsInteracting(true);
+  
+    try {
+      if (type === 'like') {
+        if (isLiked) {
+          setLikeCount(prev => Math.max(0, prev - 1));
+          setIsLiked(false);
+        } else {
+          setLikeCount(prev => prev + 1);
+          if (isDisliked) {
+            setDislikeCount(prev => Math.max(0, prev - 1));
+            setIsDisliked(false);
+          }
+          setIsLiked(true);
+        }
+      } else {
+        if (isDisliked) {
+          setDislikeCount(prev => Math.max(0, prev - 1));
+          setIsDisliked(false);
+        } else {
+          setDislikeCount(prev => prev + 1);
+          if (isLiked) {
+            setLikeCount(prev => Math.max(0, prev - 1));
+            setIsLiked(false);
+          }
+          setIsDisliked(true);
+        }
       }
+  
+      const response = await fetch(`${API_URL}/api/business-interactions`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          business_id: business.id,
+          user_id: user.uid,
+          type: type === 'like' ? 
+            (isLiked ? 'remove' : 'like') : 
+            (isDisliked ? 'remove' : 'dislike')
+        })
+      });
+  
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setLikeCount(data.data.numero_gustas);
+        setDislikeCount(data.data.no_me_gustas);
+      } else {
+        await checkUserInteraction();
+      }
+  
+    } catch (error) {
+      await checkUserInteraction();
+    } finally {
+      setIsInteracting(false);
     }
-    setIsDisliked(!isDisliked);
-    setIsLiked(false);
-    
-
   };
+
+  const handleLike = () => handleInteraction('like');
+  const handleDislike = () => handleInteraction('dislike');
 
   const handleComment = () => {
     navigation.navigate('CommentsScreen', { 
@@ -84,6 +239,7 @@ const BusinessCard = ({ business, navigation }) => {
       />
       <Text style={styles.businessName}>{business.nombre_negocio}</Text>
       <Text style={styles.businessAddress}>{business.direccion_negocio}</Text>
+      
       <View style={styles.userInfo}>
         <BusinessRating business={business} />
       </View>
@@ -108,12 +264,12 @@ const BusinessCard = ({ business, navigation }) => {
         <Text style={styles.userName}>{business.nombre_propietario}</Text>
       </View>
 
-      {/* Barra de interacción social */}
       <View style={styles.socialBar}>
         <View style={styles.socialButtonContainer}>
           <TouchableOpacity 
-            style={styles.socialButton} 
+            style={[styles.socialButton, isLiked && styles.activeSocialButton]} 
             onPress={handleLike}
+            disabled={isInteracting}
           >
             <FontAwesome 
               name={isLiked ? "heart" : "heart-o"} 
@@ -126,8 +282,9 @@ const BusinessCard = ({ business, navigation }) => {
 
         <View style={styles.socialButtonContainer}>
           <TouchableOpacity 
-            style={styles.socialButton} 
+            style={[styles.socialButton, isDisliked && styles.activeSocialButton]} 
             onPress={handleDislike}
+            disabled={isInteracting}
           >
             <FontAwesome 
               name={isDisliked ? "thumbs-down" : "thumbs-o-down"} 
@@ -135,6 +292,7 @@ const BusinessCard = ({ business, navigation }) => {
               color={isDisliked ? "#666" : "#666"}
             />
           </TouchableOpacity>
+          <Text style={styles.socialCount}>{dislikeCount}</Text>
         </View>
 
         <View style={styles.socialButtonContainer}>
@@ -142,19 +300,23 @@ const BusinessCard = ({ business, navigation }) => {
             style={styles.socialButton} 
             onPress={handleComment}
           >
-            <FontAwesome 
-              name="comment-o" 
-              size={24} 
-              color="#666"
-            />
+            <FontAwesome name="comment-o" size={24} color="#666" />
           </TouchableOpacity>
-          <Text style={styles.socialCount}>{business.numero_resenas}</Text>
+          <Text style={styles.socialCount}>{business.numero_resenas || 0}</Text>
         </View>
       </View>
+
+      <CustomAlert
+        isVisible={alertConfig.isVisible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isVisible: false }))}
+      />
     </View>
   );
 };
-
 const HomeScreen = ({ navigation }) => {
   const [businesses, setBusinesses] = useState([]);
   const [newBusinesses, setNewBusinesses] = useState([]);
@@ -162,33 +324,45 @@ const HomeScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('Todos');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchBusinesses = async () => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/businesses`);
+      const data = await response.json();
+      
+      if (data.success) {
+        const sortedBusinesses = data.businesses.sort((a, b) => 
+          new Date(b.fecha_registro) - new Date(a.fecha_registro)
+        );
+        setNewBusinesses(sortedBusinesses.slice(0, 1));
+        setBusinesses(sortedBusinesses);
+      } else {
+        throw new Error(data.message || 'Error al cargar los negocios');
+      }
+    } catch (error) {
+      console.error('Error fetching businesses:', error);
+      setError('No se pudieron cargar los negocios. Por favor, intenta de nuevo.');
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     fetchBusinesses();
   }, []);
 
-  const fetchBusinesses = () => {
+  const onRefresh = () => {
     setRefreshing(true);
-    fetch('https://www.jaydey.com/ServicesMovil/api/businesses')
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          const sortedBusinesses = data.businesses.sort((a, b) => 
-            new Date(b.fecha_registro) - new Date(a.fecha_registro)
-          );
-          setNewBusinesses(sortedBusinesses.slice(0,1));
-          setBusinesses(sortedBusinesses);
-        }
-      })
-      .catch(error => {
-        console.error('Error fetching businesses:', error);
-      })
-      .finally(() => {
-        setRefreshing(false);
-      });
+    fetchBusinesses();
   };
 
-  const onRefresh = () => {
+  const handleRetry = () => {
+    setError(null);
     fetchBusinesses();
   };
 
@@ -204,15 +378,10 @@ const HomeScreen = ({ navigation }) => {
 
   const filteredBusinesses = businesses.filter(business => {
     const matchesSearch = business.nombre_negocio.toLowerCase().includes(searchQuery.toLowerCase());
-    let matchesFilter = false;
-    
-    if (selectedFilter === 'Todos') {
-      matchesFilter = true;
-    } else if (selectedFilter === 'Salones') {
-      matchesFilter = !['Estetica', 'Peluqueria'].includes(business.servicios_ofrecidos);
-    } else {
-      matchesFilter = business.servicios_ofrecidos === selectedFilter;
-    }
+    const matchesFilter = selectedFilter === 'Todos' ? true : 
+      selectedFilter === 'Salones' ? 
+        !['Estetica', 'Peluqueria'].includes(business.servicios_ofrecidos) :
+        business.servicios_ofrecidos === selectedFilter;
     
     return matchesSearch && matchesFilter;
   });
@@ -227,10 +396,14 @@ const HomeScreen = ({ navigation }) => {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <TouchableOpacity style={styles.filterButton} onPress={() => setIsFilterOpen(!isFilterOpen)}>
+        <TouchableOpacity 
+          style={styles.filterButton} 
+          onPress={() => setIsFilterOpen(!isFilterOpen)}
+        >
           <FontAwesome name="sliders" size={20} color="#000" />
         </TouchableOpacity>
       </View>
+      
       {isFilterOpen && (
         <View style={styles.filterOptionsContainer}>
           <Text style={styles.filterTitle}>Filtrar por tipo de servicio:</Text>
@@ -258,6 +431,17 @@ const HomeScreen = ({ navigation }) => {
     </View>
   );
 
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+          <Text style={styles.retryButtonText}>Intentar de nuevo</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -270,7 +454,9 @@ const HomeScreen = ({ navigation }) => {
           </>
         }
         data={filteredBusinesses}
-        renderItem={({ item }) => <BusinessCard business={item} navigation={navigation} />}
+        renderItem={({ item }) => (
+          <BusinessCard business={item} navigation={navigation} />
+        )}
         keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl
@@ -282,11 +468,16 @@ const HomeScreen = ({ navigation }) => {
         ListEmptyComponent={renderEmptyState}
         contentContainerStyle={filteredBusinesses.length === 0 ? styles.emptyListContent : null}
       />
+
+      {isLoading && !refreshing && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Cargando negocios...</Text>
+        </View>
+      )}
     </View>
   );
 };
-
-export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -294,8 +485,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 15
   },
-
-
   header: {
     marginBottom: 15,
     backgroundColor: '#fff',
@@ -317,8 +506,6 @@ const styles = StyleSheet.create({
     height: 40,
     fontSize: 16,
   },
-
-  // Estilos de los filtros
   filterButton: {
     padding: 10,
   },
@@ -353,8 +540,6 @@ const styles = StyleSheet.create({
   selectedFilterText: {
     color: '#fff',
   },
-
-  // Estilos del banner de nuevo negocio
   newBusinessBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -380,8 +565,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'gray',
   },
-
-  // Estilos de la tarjeta de negocio
   businessCard: {
     marginBottom: 10,
     borderRadius: 10,
@@ -410,35 +593,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginBottom: 5,
   },
-
-socialBar: {
-  flexDirection: 'row',
-  justifyContent: 'center', 
-  alignItems: 'center',
-  paddingHorizontal: 15,
-  paddingVertical: 8,
-  borderTopWidth: 1,
-  borderBottomWidth: 1,
-  borderColor: '#eee',
-  backgroundColor: '#fafafa',
-},
-socialButtonContainer: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginHorizontal: 45, 
-},
-socialButton: {
-  padding: 3,
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-socialCount: {
-  marginLeft: 3,
-  fontSize: 12,
-  color: '#666',
-  minWidth: 20,
-},
-
+  socialBar: {
+    flexDirection: 'row',
+    justifyContent: 'center', 
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#eee',
+    backgroundColor: '#fafafa',
+  },
+  socialButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 45, 
+  },
+  socialButton: {
+    padding: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeSocialButton: {
+    opacity: 0.8,
+    transform: [{ scale: 1.1 }],
+  },
+  socialCount: {
+    marginLeft: 3,
+    fontSize: 12,
+    color: '#666',
+    minWidth: 20,
+  },
   businessActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -467,7 +652,6 @@ socialCount: {
   reserveButtonText: {
     color: '#fff',
   },
-
   userInfo: {
     padding: 10,
     flexDirection: 'row',
@@ -487,15 +671,11 @@ socialCount: {
     fontWeight: 'bold',
     color: '#333',
   },
-
-  // Estilos del contenedor de calificación
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 5,
   },
-
-  // Estilos del estado vacío
   emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -515,4 +695,51 @@ socialCount: {
   emptyListContent: {
     flexGrow: 1,
   },
+  loadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: 'red',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  retryButton: {
+    padding: 10,
+    backgroundColor: '#007AFF',
+    borderRadius: 5,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 5,
+  },
+  ratingText: {
+    marginLeft: 5,
+    fontSize: 14,
+    color: '#666',
+  }
 });
+
+export default HomeScreen;

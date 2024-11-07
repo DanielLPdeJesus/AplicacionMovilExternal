@@ -278,50 +278,8 @@ const ViewBussinesScreen = ({ route, navigation }) => {
                 <Ionicons name="location-outline" size={24} color="#007AFF" />
                 <Text style={styles.contactText}>{business.business_address}</Text>
               </TouchableOpacity>
-              {business.plus_code && (
-                <TouchableOpacity style={styles.contactItem} onPress={handleOpenGoogleMaps}>
-                  <Ionicons name="navigate-outline" size={24} color="#007AFF" />
-                  <Text style={styles.contactText}>Ver en Google Maps{business.plus_code}</Text>
-                </TouchableOpacity>
-              )}
             </View>
           );
-      case 'reviews':
-        return (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Reseñas</Text>
-            {business.reviews && business.reviews.length > 0 ? (
-              business.reviews.map((review, index) => (
-                <View key={index} style={styles.reviewItem}>
-                  <Text style={styles.reviewerName}>{review.user_name}</Text>
-                  <Text style={styles.reviewText}>{review.comment}</Text>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.noReviewsText}>{business.no_reviews_message || "No hay reseñas disponibles."}</Text>
-            )}
-          </View>
-        );
-      case 'location':
-        return business.latitude && business.longitude ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Ubicación</Text>
-            <MapView
-              style={styles.map}
-              initialRegion={{
-                latitude: business.latitude,
-                longitude: business.longitude,
-                latitudeDelta: 0.005,
-                longitudeDelta: 0.005,
-              }}
-            >
-              <Marker
-                coordinate={{ latitude: business.latitude, longitude: business.longitude }}
-                title={business.business_name}
-              />
-            </MapView>
-          </View>
-        ) : null;
       case 'reserve':
         return (
           <TouchableOpacity 
