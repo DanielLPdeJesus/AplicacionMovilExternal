@@ -16,42 +16,46 @@ import { es } from 'date-fns/locale';
 
 const ReservationDetailsScreen = ({ route, navigation }) => {
   const { reservation } = route.params;
+  const [reservationData, setReservationData] = useState(null);
   const [businessData, setBusinessData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchBusinessData();
+    fetchReservationDetails();
   }, []);
 
-  const fetchBusinessData = async () => {
+  const fetchReservationDetails = async () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `https://www.jaydey.com/ServicesMovil/api/business/${reservation.id_negocio}`
+        `https://www.jaydey.com/ServicesMovil/api/reservation-details/${reservation.id}`
       );
       const data = await response.json();
       if (data.success) {
-        setBusinessData(data.business);
+        setReservationData(data.data.reservation);
+        setBusinessData(data.data.business);
+      } else {
+        Alert.alert('Error', 'No se pudo cargar la información de la reservación');
       }
     } catch (error) {
-      console.error('Error fetching business data:', error);
-      Alert.alert('Error', 'No se pudo cargar la información del negocio');
+      console.error('Error fetching reservation details:', error);
+      Alert.alert('Error', 'No se pudo cargar la información');
     } finally {
       setLoading(false);
     }
   };
 
   const getStatusInfo = (status) => {
-    switch(status.toLowerCase()) {
+    switch(status?.toLowerCase()) {
       case 'pendiente':
         return { icon: 'time', color: '#848483', text: 'Pendiente' };
-      case 'aceptado':
-        return { icon: 'checkmark-circle', color: '#4CAF50', text: 'Aprobado' };
-      case 'rechazado':
-        return { icon: 'close-circle', color: '#F44336', text: 'Rechazado' };
-      case 'cancelado':
-        return { icon: 'close-circle-outline', color: '#bf1e13', text: 'Cancelado' };
-      case 'concluido':
+      case 'aceptada':
+        return { icon: 'checkmark-circle', color: '#4CAF50', text: 'Aceptada' };
+      case 'rechazada':
+        return { icon: 'close-circle', color: '#F44336', text: 'Rechazada' };
+      case 'cancelada':
+        return { icon: 'close-circle-outline', color: '#bf1e13', text: 'Cancelada' };
+      case 'concluida':
         return { icon: 'checkmark', color: '#4CAF50', text: 'Concluido' };
       default:
         return { icon: 'help-circle-outline', color: '#9E9E9E', text: status };
@@ -69,6 +73,52 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
   const handleCallBusiness = () => {
     if (businessData?.telefono) {
       Linking.openURL(`tel:${businessData.telefono}`);
+    }
+  };
+
+  const handleWhatsApp = () => {
+    if (businessData?.telefono) {
+      const whatsappNumber = businessData.telefono.replace(/\D/g, '');
+      const whatsappUrl = `whatsapp://send?phone=52${whatsappNumber}`;
+      
+      Linking.canOpenURL(whatsappUrl)
+        .then(supported => {
+          if (supported) {
+            return Linking.openURL(whatsappUrl);
+          } else {
+            Alert.alert(
+              'Error',
+              'WhatsApp no está instalado en este dispositivo',
+              [{ text: 'OK' }]
+            );
+          }
+        })
+        .catch(err => {
+          console.error('Error al abrir WhatsApp:', err);
+          Alert.alert('Error', 'No se pudo abrir WhatsApp');
+        });
+    }
+  };
+
+  const handleEmail = () => {
+    if (businessData?.correo) {
+      const emailUrl = `mailto:${businessData.correo}`;
+      Linking.canOpenURL(emailUrl)
+        .then(supported => {
+          if (supported) {
+            return Linking.openURL(emailUrl);
+          } else {
+            Alert.alert(
+              'Error',
+              'No hay aplicación de correo configurada',
+              [{ text: 'OK' }]
+            );
+          }
+        })
+        .catch(err => {
+          console.error('Error al abrir el correo:', err);
+          Alert.alert('Error', 'No se pudo abrir el correo');
+        });
     }
   };
 
@@ -91,8 +141,11 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
           onPress: async () => {
             try {
               const response = await fetch(
-                `https://www.jaydey.com/ServicesMovil/api/cancel-reservation/${reservation.id}`,
-                { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+                `https://www.jaydey.com/ServicesMovil/api/cancel-reservation/${reservationData.id}`,
+                { 
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' }
+                }
               );
               const data = await response.json();
               if (data.success) {
@@ -100,7 +153,7 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
                   [{ text: "OK", onPress: () => navigation.goBack() }]
                 );
               } else {
-                Alert.alert("Error", "No se pudo cancelar la reservación");
+                Alert.alert("Error", data.message || "No se pudo cancelar la reservación");
               }
             } catch (error) {
               console.error('Error canceling reservation:', error);
@@ -112,7 +165,7 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
     );
   };
 
-  if (loading) {
+  if (loading || !reservationData || !businessData) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FF69B4" />
@@ -120,13 +173,13 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
     );
   }
 
-  const statusInfo = getStatusInfo(reservation.estado);
+  const statusInfo = getStatusInfo(reservationData.estado);
 
   return (
     <ScrollView style={styles.container}>
       {/* Service Title and Status */}
       <View style={styles.titleContainer}>
-        <Text style={styles.serviceTitle}>{reservation.tipo_de_servicio}</Text>
+        <Text style={styles.serviceTitle}>{reservationData.tipo_de_servicio}</Text>
         <View style={styles.statusContainer}>
           <Ionicons name={statusInfo.icon} size={20} color={statusInfo.color} />
           <Text style={[styles.statusText, { color: statusInfo.color }]}>
@@ -138,84 +191,94 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
       {/* Main Image */}
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: reservation.imagen_url }}
+          source={{ uri: reservationData.imagen_url }}
           style={styles.mainImage}
           defaultSource={require('../../../assets/iconresulocion.png')}
         />
       </View>
 
       {/* Business Info */}
-      {businessData && (
-        <View style={styles.businessContainer}>
-          <View style={styles.businessHeader}>
-            <Image 
-              source={{ uri: businessData.logo_url }}
-              style={styles.businessLogo}
-              defaultSource={require('../../../assets/iconresulocion.png')}
-            />
-            <View style={styles.businessInfo}>
-              <Text style={styles.businessName}>{businessData.nombre}</Text>
-              <Text style={styles.businessAddress}>{businessData.direccion}</Text>
-            </View>
+      <View style={styles.businessContainer}>
+        <View style={styles.businessHeader}>
+          <Image 
+            source={{ uri: businessData.logo_url }}
+            style={styles.businessLogo}
+            defaultSource={require('../../../assets/iconresulocion.png')}
+          />
+          <View style={styles.businessInfo}>
+            <Text style={styles.businessName}>{businessData.nombre}</Text>
+            <Text style={styles.businessAddress}>{businessData.direccion}</Text>
           </View>
+        </View>
 
-          <View style={styles.divider} />
-          
-          <View style={styles.actionButtons}>
+        <View style={styles.divider} />
+        
+        <View style={styles.actionButtonsContainer}>
+          <View style={styles.actionButtonsRow}>
             <TouchableOpacity style={styles.actionButton} onPress={handleCallBusiness}>
               <Ionicons name="call" size={24} color="#4CAF50" />
               <Text style={styles.actionButtonText}>Llamar</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={handleWhatsApp}>
+              <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
+              <Text style={styles.actionButtonText}>WhatsApp</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.actionButtonsRow}>
             <TouchableOpacity style={styles.actionButton} onPress={handleGetDirections}>
               <Ionicons name="location" size={24} color="#2196F3" />
-              <Text style={styles.actionButtonText}>Ver ubicación</Text>
+              <Text style={styles.actionButtonText}>Ubicación</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={handleEmail}>
+              <Ionicons name="mail" size={24} color="#FF5722" />
+              <Text style={styles.actionButtonText}>Correo</Text>
             </TouchableOpacity>
           </View>
         </View>
-      )}
+      </View>
 
       {/* Appointment Details */}
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>Detalles de la Cita</Text>
         <View style={styles.detailRow}>
           <Ionicons name="calendar-outline" size={24} color="#666" />
-          <Text style={styles.detailText}>{formatDate(reservation.fecha)}</Text>
+          <Text style={styles.detailText}>{formatDate(reservationData.fecha)}</Text>
         </View>
         <View style={styles.detailRow}>
           <Ionicons name="time-outline" size={24} color="#666" />
-          <Text style={styles.detailText}>{reservation.hora_seleccionada}</Text>
+          <Text style={styles.detailText}>{reservationData.hora_seleccionada}</Text>
         </View>
       </View>
 
       {/* Petición */}
-      {reservation.peticion && (
+      {reservationData.peticion && (
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Tu Petición</Text>
-          <Text style={styles.peticionText}>{reservation.peticion}</Text>
+          <Text style={styles.peticionText}>{reservationData.peticion}</Text>
         </View>
       )}
 
       {/* Comments */}
-      {(reservation.comentarios || reservation.comentariosnego) && (
+      {(reservationData.comentarios || reservationData.comentariosnego) && (
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Comentarios</Text>
-          {reservation.comentarios && (
+          {reservationData.comentarios && (
             <View style={styles.commentContainer}>
               <Ionicons name="person-circle" size={24} color="#666" />
-              <Text style={styles.commentText}>{reservation.comentarios}</Text>
+              <Text style={styles.commentText}>{reservationData.comentarios}</Text>
             </View>
           )}
-          {reservation.comentariosnego && (
+          {reservationData.comentariosnego && (
             <View style={[styles.commentContainer, styles.businessComment]}>
               <Ionicons name="business" size={24} color="#666" />
-              <Text style={styles.commentText}>{reservation.comentariosnego}</Text>
+              <Text style={styles.commentText}>{reservationData.comentariosnego}</Text>
             </View>
           )}
         </View>
       )}
 
       {/* Cancel Button */}
-      {reservation.estado === 'pendiente' && (
+      {reservationData.estado === 'pendiente' && (
         <TouchableOpacity 
           style={styles.cancelButton}
           onPress={handleCancelReservation}
@@ -299,18 +362,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E0E0',
     marginVertical: 16,
   },
-  actionButtons: {
+  actionButtonsContainer: {
+    paddingHorizontal: 10,
+  },
+  actionButtonsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    marginBottom: 10,
   },
   actionButton: {
+    flex: 1,
     alignItems: 'center',
     padding: 10,
+    margin: 5,
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
   },
   actionButtonText: {
     marginTop: 4,
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
+    textAlign: 'center',
   },
   sectionContainer: {
     padding: 20,
