@@ -44,7 +44,7 @@ const ReservationItem = ({
         return {
           icon: 'checkmark-circle',
           color: '#4CAF50',
-          text: 'Aprobado',
+          text: 'Aceptada',
           bgColor: '#E8F5E9'
         };
       case 'rechazada':
@@ -58,14 +58,14 @@ const ReservationItem = ({
         return {
           icon: 'close-circle-outline',
           color: '#bf1e13',
-          text: 'Cancelado',
+          text: 'Cancelada',
           bgColor: '#FFEBEE'
         };
       case 'concluida':
         return {
           icon: 'checkmark',
           color: '#f9f9f6',
-          text: 'Concluido',
+          text: 'Concluida',
           bgColor: '#e1d54f'
         }
       default:
@@ -262,16 +262,16 @@ const ReservationsScreen = ({ navigation }) => {
     let body = '';
 
     switch(reservation.estado.toLowerCase()) {
-      case 'aceptado':
-        body = `Tu reservación de ${reservation.tipo_de_servicio} ha sido aprobada. 🎉`;
+      case 'aceptada':
+        body = `Tu reservación de ${reservation.tipo_de_servicio} ha sido Aceptada. 🎉`;
         break;
-      case 'rechazado':
+      case 'rechazada':
         body = `Lo sentimos, tu reservación de ${reservation.tipo_de_servicio} ha sido rechazada. ❌`;
         break;
-      case 'cancelado':
+      case 'cancelada':
         body = `Tu reservación de ${reservation.tipo_de_servicio} ha sido cancelada. ⚠️`;
         break;
-      case 'concluido':
+      case 'concluida':
         body = `¡Tu reservación de ${reservation.tipo_de_servicio} ha sido completada! ¡Gracias por tu preferencia! ✨`;
         break;
       default:

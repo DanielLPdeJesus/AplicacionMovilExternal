@@ -19,6 +19,8 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
   const [reservationData, setReservationData] = useState(null);
   const [businessData, setBusinessData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [logoLoading, setLogoLoading] = useState(true);
 
   useEffect(() => {
     fetchReservationDetails();
@@ -129,42 +131,6 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
     }
   };
 
-  const handleCancelReservation = async () => {
-    Alert.alert(
-      "Cancelar Reservación",
-      "¿Estás seguro que deseas cancelar esta reservación?",
-      [
-        { text: "No", style: "cancel" },
-        {
-          text: "Sí, cancelar",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const response = await fetch(
-                `https://www.jaydey.com/ServicesMovil/api/cancel-reservation/${reservationData.id}`,
-                { 
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' }
-                }
-              );
-              const data = await response.json();
-              if (data.success) {
-                Alert.alert("Éxito", "La reservación ha sido cancelada",
-                  [{ text: "OK", onPress: () => navigation.goBack() }]
-                );
-              } else {
-                Alert.alert("Error", data.message || "No se pudo cancelar la reservación");
-              }
-            } catch (error) {
-              console.error('Error canceling reservation:', error);
-              Alert.alert("Error", "Hubo un problema al cancelar la reservación");
-            }
-          }
-        }
-      ]
-    );
-  };
-
   if (loading || !reservationData || !businessData) {
     return (
       <View style={styles.loadingContainer}>
@@ -190,21 +156,61 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
 
       {/* Main Image */}
       <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: reservationData.imagen_url }}
-          style={styles.mainImage}
-          defaultSource={require('../../../assets/iconresulocion.png')}
-        />
+        <View style={styles.imageWrapper}>
+          {imageLoading && (
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator size="large" color="#FF69B4" />
+            </View>
+          )}
+          {reservationData.imagen_url ? (
+            <Image
+              source={{
+                uri: reservationData.imagen_url,
+                headers: {
+                  Accept: '*/*',
+                }
+              }}
+              style={styles.mainImage}
+              onLoadStart={() => setImageLoading(true)}
+              onLoadEnd={() => setImageLoading(false)}
+              onError={() => {
+                setImageLoading(false);
+                console.log('Error loading image');
+              }}
+            />
+          ) : (
+            <View style={[styles.mainImage, styles.placeholderContainer]}>
+              <Ionicons name="image-outline" size={50} color="#666" />
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Business Info */}
       <View style={styles.businessContainer}>
         <View style={styles.businessHeader}>
-          <Image 
-            source={{ uri: businessData.logo_url }}
-            style={styles.businessLogo}
-            defaultSource={require('../../../assets/iconresulocion.png')}
-          />
+          <View style={styles.businessLogoContainer}>
+            {logoLoading && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="small" color="#FF69B4" />
+              </View>
+            )}
+            <Image 
+              source={{
+                uri: businessData.logo_url,
+                headers: {
+                  Accept: '*/*',
+                }
+              }}
+              style={styles.businessLogo}
+              onLoadStart={() => setLogoLoading(true)}
+              onLoadEnd={() => setLogoLoading(false)}
+              onError={() => {
+                setLogoLoading(false);
+                console.log('Error loading business logo');
+              }}
+            />
+          </View>
           <View style={styles.businessInfo}>
             <Text style={styles.businessName}>{businessData.nombre}</Text>
             <Text style={styles.businessAddress}>{businessData.direccion}</Text>
@@ -276,17 +282,6 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
           )}
         </View>
       )}
-
-      {/* Cancel Button */}
-      {reservationData.estado === 'pendiente' && (
-        <TouchableOpacity 
-          style={styles.cancelButton}
-          onPress={handleCancelReservation}
-        >
-          <Ionicons name="close-circle" size={24} color="#FFF" />
-          <Text style={styles.cancelButtonText}>Cancelar Reservación</Text>
-        </TouchableOpacity>
-      )}
     </ScrollView>
   );
 };
@@ -323,12 +318,36 @@ const styles = StyleSheet.create({
   imageContainer: {
     padding: 16,
     alignItems: 'center',
+    backgroundColor: '#fff',
   },
-  mainImage: {
+  imageWrapper: {
     width: '90%',
     height: 200,
     borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#f5f5f5',
+    position: 'relative',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    zIndex: 1,
+  },
+  mainImage: {
+    width: '100%',
+    height: '100%',
     resizeMode: 'cover',
+  },
+  placeholderContainer: {
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   businessContainer: {
     padding: 20,
@@ -338,11 +357,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  businessLogo: {
+  businessLogoContainer: {
     width: 50,
     height: 50,
     borderRadius: 25,
+    overflow: 'hidden',
+    backgroundColor: '#f5f5f5',
     marginRight: 12,
+    position: 'relative',
+  },
+  businessLogo: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   businessInfo: {
     flex: 1,
@@ -418,6 +445,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
     borderRadius: 8,
   },
+  commentContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+  },
   businessComment: {
     backgroundColor: '#FFF9C4',
   },
@@ -426,22 +461,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#444',
     lineHeight: 22,
-  },
-  cancelButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF4444',
-    margin: 20,
-    padding: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  cancelButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  }
 });
 
 export default ReservationDetailsScreen;

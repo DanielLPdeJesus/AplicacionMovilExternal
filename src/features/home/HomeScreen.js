@@ -20,7 +20,6 @@ const BusinessRating = ({ business }) => {
   const calculateRating = (likes, dislikes) => {
     const total = likes + dislikes;
     if (total === 0) return 0;
-    // Convertimos la proporción de likes a una escala de 5 estrellas
     return (likes / total) * 5;
   };
 
@@ -29,7 +28,7 @@ const BusinessRating = ({ business }) => {
       business.numero_gustas || 0,
       business.no_me_gustas || 0
     );
-    const starCount = Math.round(rating); // Redondeamos para obtener número entero de estrellas
+    const starCount = Math.round(rating);
     const stars = [];
 
     for (let i = 0; i < 5; i++) {
@@ -58,8 +57,6 @@ const BusinessRating = ({ business }) => {
     </View>
   );
 };
-
-
 
 const NewBusinessBanner = ({ business }) => (
   <View style={styles.newBusinessBanner}>
@@ -213,7 +210,6 @@ const BusinessCard = ({ business, navigation }) => {
       } else {
         await checkUserInteraction();
       }
-  
     } catch (error) {
       await checkUserInteraction();
     } finally {
@@ -249,7 +245,7 @@ const BusinessCard = ({ business, navigation }) => {
           style={styles.actionButton}
           onPress={() => navigation.navigate('ViewBussinesScreen', { businessId: business.id })}
         >
-          <Text style={styles.actionButtonText}>Ver mas</Text>
+          <Text style={styles.actionButtonText}>Ver más</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.actionButton, styles.reserveButton]}
@@ -277,7 +273,6 @@ const BusinessCard = ({ business, navigation }) => {
               color={isLiked ? "#FF0000" : "#666"}
             />
           </TouchableOpacity>
-          <Text style={styles.socialCount}>{likeCount}</Text>
         </View>
 
         <View style={styles.socialButtonContainer}>
@@ -292,7 +287,6 @@ const BusinessCard = ({ business, navigation }) => {
               color={isDisliked ? "#666" : "#666"}
             />
           </TouchableOpacity>
-          <Text style={styles.socialCount}>{dislikeCount}</Text>
         </View>
 
         <View style={styles.socialButtonContainer}>
@@ -366,21 +360,11 @@ const HomeScreen = ({ navigation }) => {
     fetchBusinesses();
   };
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyStateContainer}>
-      <Image 
-        source={require('../../../assets/notfout.jpg')} 
-        style={styles.emptyStateImage} 
-      />
-      <Text style={styles.emptyStateText}>No se encontraron negocios</Text>
-    </View>
-  );
-
   const filteredBusinesses = businesses.filter(business => {
     const matchesSearch = business.nombre_negocio.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = selectedFilter === 'Todos' ? true : 
       selectedFilter === 'Salones' ? 
-        !['Estetica', 'Peluqueria'].includes(business.servicios_ofrecidos) :
+        !['Estética', 'Peluquería'].includes(business.servicios_ofrecidos) :
         business.servicios_ofrecidos === selectedFilter;
     
     return matchesSearch && matchesFilter;
@@ -465,7 +449,7 @@ const HomeScreen = ({ navigation }) => {
             colors={["#9Bd35A", "#689F38"]}
           />
         }
-        ListEmptyComponent={renderEmptyState}
+        ListEmptyComponent={null}
         contentContainerStyle={filteredBusinesses.length === 0 ? styles.emptyListContent : null}
       />
 
@@ -682,15 +666,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  emptyStateImage: {
-    width: 150,
-    height: 150,
-    marginBottom: 20,
-  },
   emptyStateText: {
     fontSize: 18,
     color: '#888',
     textAlign: 'center',
+    marginTop: 15,
+  },
+  emptyStateSubText: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 5,
   },
   emptyListContent: {
     flexGrow: 1,
@@ -730,15 +716,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 5,
-  },
   ratingText: {
     marginLeft: 5,
     fontSize: 14,
     color: '#666',
+  },
+  loadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  emptyListContent: {
+    flexGrow: 1,
   }
 });
 
