@@ -40,28 +40,28 @@ const ReservationItem = ({
           text: 'Pendiente',
           bgColor: '#dddbd8'
         };
-      case 'aceptado':
+      case 'aceptada':
         return {
           icon: 'checkmark-circle',
           color: '#4CAF50',
           text: 'Aprobado',
           bgColor: '#E8F5E9'
         };
-      case 'rechazado':
+      case 'rechazada':
         return {
           icon: 'close-circle',
           color: '#F44336',
           text: 'Rechazado',
           bgColor: '#FFEBEE'
         };
-      case 'cancelado':
+      case 'cancelada':
         return {
           icon: 'close-circle-outline',
           color: '#bf1e13',
           text: 'Cancelado',
           bgColor: '#FFEBEE'
         };
-      case 'concluido':
+      case 'concluida':
         return {
           icon: 'checkmark',
           color: '#f9f9f6',

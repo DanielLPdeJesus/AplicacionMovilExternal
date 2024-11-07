@@ -5,6 +5,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import CustomAlert from '../../components/common/CustomAlert';
+import TermsAndPrivacyScreen from '../../features/bussines/TermsAndPrivacyScreen';
 
 const RegisterScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
@@ -372,9 +373,24 @@ const RegisterScreen = ({ navigation }) => {
       </View>
       {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
 
-      <Text style={styles.textregi}>
-        Recuerda que al Registrarte aceptas automáticamente los términos y condiciones y el aviso de privacidad
-      </Text>
+      <View style={styles.termsContainer}>
+        <Text style={styles.textregi}>
+          Recuerda que al Registrarte aceptas automáticamente los{' '}
+          <Text 
+            style={styles.link}
+            onPress={() => navigation.navigate('TermsAndPrivacy', { viewType: 'terms' })}
+          >
+            términos y condiciones
+          </Text>
+          {' '}y el{' '}
+          <Text 
+            style={styles.link}
+            onPress={() => navigation.navigate('TermsAndPrivacy', { viewType: 'privacy' })}
+          >
+            aviso de privacidad
+          </Text>
+        </Text>
+      </View>
 
       <TouchableOpacity 
         style={[
@@ -494,7 +510,9 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
-    margin: 30
+    marginTop: 10,
+    marginHorizontal: 35,
+    marginBottom: 35,
   },
   buttonText: {
     color: '#fff',
@@ -510,8 +528,9 @@ const styles = StyleSheet.create({
   },
   textregi: {
     textAlign: 'center',
-
-},
+    fontSize: 14,
+    lineHeight: 20,
+  },
   errorText: {
     color: 'red',
     fontSize: 12,
@@ -615,6 +634,13 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 20,
   },
+  termsContainer: {
+    marginHorizontal: 20,
+    marginBottom: 10,
+  },
+  link: {
+    color: '#0066cc',
+    textDecorationLine: 'underline',
+  }
 });
-
 export default RegisterScreen;

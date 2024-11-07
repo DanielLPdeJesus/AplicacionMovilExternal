@@ -15,6 +15,7 @@ import ReservationScreen from '../features/reservation/ReservationScreen';
 import ViewBussinesScreen from '../features/bussines/ViewBussinesScreen';
 import ReservationDetailsScreen from '../features/reservation/ReservationDetailsScreen';
 import CommentsScreen from '../features/bussines/CommentsScreen';
+import TermsAndPrivacyScreen from '../features/bussines/TermsAndPrivacyScreen';
 
 import { useAuth } from '../context/AuthContext';
 
@@ -92,6 +93,11 @@ const AppNavigator = () => {
     title: 'Detalles de Reservación',
     headerBackTitle: 'Volver'
   }} 
+/>
+<Stack.Screen 
+  name="TermsAndPrivacy" 
+  component={TermsAndPrivacyScreen} 
+  options={{ headerShown: false }}
 />
       </Stack.Navigator>
     </NavigationContainer>

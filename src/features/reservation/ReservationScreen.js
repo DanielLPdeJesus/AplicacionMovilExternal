@@ -29,7 +29,7 @@ const ReservationScreen = ({ route, navigation }) => {
   const [alertConfig, setAlertConfig] = useState({ isVisible: false, type: '', title: '', message: '', buttons: [] });
 
   const times = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM'];
-  const services = ['Masaje', 'Facial', 'Manicura'];
+  const services = ['Masaje', 'Facial', 'Pedicura', 'Corte de pelo'];
 
   useEffect(() => {
     checkLoginStatus();
@@ -166,10 +166,10 @@ const ReservationScreen = ({ route, navigation }) => {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <TouchableOpacity>
-          <Text style={styles.termsButton}>Términos y Condiciones</Text>
+          <Text style={styles.termsButton} onPress={() => navigation.navigate('TermsAndPrivacy', { viewType: 'terms' })}>Términos y Condiciones</Text>
         </TouchableOpacity>
       </View>
 
@@ -271,7 +271,7 @@ const ReservationScreen = ({ route, navigation }) => {
         </TouchableOpacity>
         <Text style={styles.termsText}>Aceptar Términos y condiciones</Text>
         <TouchableOpacity>
-          <Text style={styles.readPoliciesButton}>Leer Políticas</Text>
+          <Text style={styles.readPoliciesButton} onPress={() => navigation.navigate('TermsAndPrivacy', { viewType: 'privacy' })}>Leer Políticas</Text>
         </TouchableOpacity>
       </View>
 
