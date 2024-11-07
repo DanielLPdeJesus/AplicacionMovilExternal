@@ -8,11 +8,15 @@ import {
   Linking, 
   Image, 
   ActivityIndicator,
-  Alert 
+  Alert,
+  Platform,
+  Dimensions 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+const { width } = Dimensions.get('window');
 
 const ReservationDetailsScreen = ({ route, navigation }) => {
   const { reservation } = route.params;
@@ -66,7 +70,7 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
 
   const formatDate = (dateString) => {
     try {
-      return format(new Date(dateString), "dd 'de' MMMM, yyyy", { locale: es });
+      return format(new Date(dateString), "dd 'de' MMMM, yyyy", { locale: mx});
     } catch (e) {
       return dateString;
     }
@@ -78,49 +82,55 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
     }
   };
 
-  const handleWhatsApp = () => {
+  const handleWhatsApp = async () => {
     if (businessData?.telefono) {
       const whatsappNumber = businessData.telefono.replace(/\D/g, '');
-      const whatsappUrl = `whatsapp://send?phone=52${whatsappNumber}`;
+      const message = 'Hola, me comunico por mi reservación...';
       
-      Linking.canOpenURL(whatsappUrl)
-        .then(supported => {
-          if (supported) {
-            return Linking.openURL(whatsappUrl);
+      try {
+        // Primero intentamos abrir WhatsApp Web
+        const webWhatsapp = `https://wa.me/52${whatsappNumber}?text=${encodeURIComponent(message)}`;
+        await Linking.openURL(webWhatsapp);
+      } catch (err) {
+        console.error('Error al abrir WhatsApp Web:', err);
+        
+        // Si falla WhatsApp Web, intentamos la app nativa
+        try {
+          const whatsappUrl = Platform.select({
+            ios: `whatsapp://send?phone=52${whatsappNumber}&text=${encodeURIComponent(message)}`,
+            android: `intent://send?phone=52${whatsappNumber}&text=${encodeURIComponent(message)}#Intent;package=com.whatsapp;scheme=whatsapp;end`
+          });
+          
+          const canOpen = await Linking.canOpenURL(whatsappUrl);
+          if (canOpen) {
+            await Linking.openURL(whatsappUrl);
           } else {
-            Alert.alert(
-              'Error',
-              'WhatsApp no está instalado en este dispositivo',
-              [{ text: 'OK' }]
-            );
+            handleEmail(); // Fallback a email si no está disponible WhatsApp
           }
-        })
-        .catch(err => {
-          console.error('Error al abrir WhatsApp:', err);
-          Alert.alert('Error', 'No se pudo abrir WhatsApp');
-        });
+        } catch (error) {
+          console.error('Error al abrir WhatsApp nativo:', error);
+          handleEmail(); // Fallback a email si hay error
+        }
+      }
     }
   };
 
-  const handleEmail = () => {
+  const handleEmail = async () => {
     if (businessData?.correo) {
-      const emailUrl = `mailto:${businessData.correo}`;
-      Linking.canOpenURL(emailUrl)
-        .then(supported => {
-          if (supported) {
-            return Linking.openURL(emailUrl);
-          } else {
-            Alert.alert(
-              'Error',
-              'No hay aplicación de correo configurada',
-              [{ text: 'OK' }]
-            );
-          }
-        })
-        .catch(err => {
-          console.error('Error al abrir el correo:', err);
-          Alert.alert('Error', 'No se pudo abrir el correo');
-        });
+      const subject = 'Consulta sobre reservación';
+      const body = 'Hola, me comunico por mi reservación...';
+      const emailUrl = `mailto:${businessData.correo}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      
+      try {
+        await Linking.openURL(emailUrl);
+      } catch (error) {
+        console.error('Error al abrir el correo:', error);
+        Alert.alert(
+          'Error',
+          'No se pudo abrir el correo electrónico. Por favor, contacta directamente al correo: ' + businessData.correo,
+          [{ text: 'OK' }]
+        );
+      }
     }
   };
 
@@ -221,21 +231,37 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
         
         <View style={styles.actionButtonsContainer}>
           <View style={styles.actionButtonsRow}>
-            <TouchableOpacity style={styles.actionButton} onPress={handleCallBusiness}>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: '#f0f0f0' }]} 
+              onPress={handleCallBusiness}
+              activeOpacity={0.7}
+            >
               <Ionicons name="call" size={24} color="#4CAF50" />
               <Text style={styles.actionButtonText}>Llamar</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={handleWhatsApp}>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: '#f0f0f0' }]} 
+              onPress={handleWhatsApp}
+              activeOpacity={0.7}
+            >
               <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
               <Text style={styles.actionButtonText}>WhatsApp</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.actionButtonsRow}>
-            <TouchableOpacity style={styles.actionButton} onPress={handleGetDirections}>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: '#f0f0f0' }]} 
+              onPress={handleGetDirections}
+              activeOpacity={0.7}
+            >
               <Ionicons name="location" size={24} color="#2196F3" />
               <Text style={styles.actionButtonText}>Ubicación</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={handleEmail}>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: '#f0f0f0' }]} 
+              onPress={handleEmail}
+              activeOpacity={0.7}
+            >
               <Ionicons name="mail" size={24} color="#FF5722" />
               <Text style={styles.actionButtonText}>Correo</Text>
             </TouchableOpacity>
@@ -400,68 +426,84 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     alignItems: 'center',
-    padding: 10,
+    padding: 15,
     margin: 5,
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: '#f5f5f5',
-  },
-  actionButtonText: {
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+        width: 0,
+        height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+},
+actionButtonText: {
     marginTop: 4,
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
-  },
-  sectionContainer: {
+    fontWeight: '500',
+},
+sectionContainer: {
     padding: 20,
     borderTopWidth: 8,
     borderTopColor: '#F5F5F5',
-  },
-  sectionTitle: {
+},
+sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#1A1A1A',
     marginBottom: 16,
-  },
-  detailRow: {
+},
+detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     marginBottom: 12,
-  },
-  detailText: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+},
+detailText: {
     fontSize: 16,
     color: '#444',
-  },
-  peticionText: {
+    flex: 1,
+},
+peticionText: {
     fontSize: 16,
     color: '#444',
     lineHeight: 24,
-  },
-  commentContainer: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+},
+commentContainer: {
     flexDirection: 'row',
     gap: 12,
     marginBottom: 16,
     padding: 12,
     backgroundColor: '#F8F9FA',
     borderRadius: 8,
-  },
-  commentContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-    padding: 12,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-  },
-  businessComment: {
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+        width: 0,
+        height: 1,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 1.0,
+},
+businessComment: {
     backgroundColor: '#FFF9C4',
-  },
-  commentText: {
+},
+commentText: {
     flex: 1,
     fontSize: 15,
     color: '#444',
     lineHeight: 22,
-  }
+}
 });
 
 export default ReservationDetailsScreen;

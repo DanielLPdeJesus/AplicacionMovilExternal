@@ -80,7 +80,7 @@ const ReservationItem = ({
 
   const formatDate = (dateString) => {
     try {
-      return format(new Date(dateString), "dd 'de' MMMM, yyyy", { locale: es });
+      return format(new Date(dateString), "dd 'de' MMMM, yyyy", { locale: mx });
     } catch (e) {
       return dateString;
     }

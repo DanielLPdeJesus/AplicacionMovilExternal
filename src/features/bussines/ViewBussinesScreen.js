@@ -280,6 +280,32 @@ const ViewBussinesScreen = ({ route, navigation }) => {
               </TouchableOpacity>
             </View>
           );
+          case 'hours':
+            return (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Horario de Atención</Text>
+                <View style={styles.hoursContainer}>
+                  {business.opening_hours?.turno_1 && (
+                    <View style={styles.hourItem}>
+                      <Ionicons name="time-outline" size={24} color="#007AFF" />
+                      <View style={styles.hourTextContainer}>
+                        <Text style={styles.hourTitle}>Primer Turno</Text>
+                        <Text style={styles.hourText}>{business.opening_hours.turno_1}</Text>
+                      </View>
+                    </View>
+                  )}
+                  {business.opening_hours?.turno_2 && (
+                    <View style={styles.hourItem}>
+                      <Ionicons name="time-outline" size={24} color="#007AFF" />
+                      <View style={styles.hourTextContainer}>
+                        <Text style={styles.hourTitle}>Segundo Turno</Text>
+                        <Text style={styles.hourText}>{business.opening_hours.turno_2}</Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </View>
+            );
       case 'reserve':
         return (
           <TouchableOpacity 
@@ -300,6 +326,7 @@ const ViewBussinesScreen = ({ route, navigation }) => {
     { type: 'services' },
     { type: 'promotions' },
     { type: 'contact' },
+    { type: 'hours' },
     { type: 'reviews' },
     { type: 'location' },
     { type: 'reserve' },
@@ -387,8 +414,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingVertical: 20,
     paddingHorizontal: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
   },
   sectionTitle: {
     fontSize: 20,
@@ -524,6 +549,37 @@ const styles = StyleSheet.create({
   noPromotionsText: {
     fontStyle: 'italic',
     textAlign: 'center',
+    color: '#666',
+  },
+  
+  hoursContainer: {
+    backgroundColor: '#f8f8f8',
+  },
+  hourItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  hourItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    },
+  hourTextContainer: {
+    marginLeft: 15,
+    flex: 1,
+  },
+  hourTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  hourText: {
+    fontSize: 15,
     color: '#666',
   },
 });

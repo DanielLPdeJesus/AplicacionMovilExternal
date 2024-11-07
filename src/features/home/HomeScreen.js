@@ -392,7 +392,7 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.filterOptionsContainer}>
           <Text style={styles.filterTitle}>Filtrar por tipo de servicio:</Text>
           <View style={styles.filterOptions}>
-            {['Todos', 'Estetica', 'Peluqueria', 'Salones'].map((filter) => (
+            {['Todos', 'Estetica', 'Peluqueria', 'Salon'].map((filter) => (
               <TouchableOpacity
                 key={filter}
                 style={[

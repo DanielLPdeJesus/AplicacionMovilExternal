@@ -1,10 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, StyleSheet } from 'react-native';
+import { 
+  View, 
+  Text, 
+  ScrollView, 
+  TouchableOpacity, 
+  Image, 
+  TextInput, 
+  StyleSheet,
+  Dimensions,
+  Platform,
+  Alert
+} from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext'; 
 import CustomAlert from '../../components/common/CustomAlert';
+import { useFocusEffect } from '@react-navigation/native';
+
+const { width } = Dimensions.get('window');
 
 LocaleConfig.locales['es'] = {
   monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
@@ -25,56 +39,190 @@ const ReservationScreen = ({ route, navigation }) => {
   const [comments, setComments] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [businessHours, setBusinessHours] = useState(null);
   const { businessId } = route.params;
-  const [alertConfig, setAlertConfig] = useState({ isVisible: false, type: '', title: '', message: '', buttons: [] });
+  const [alertConfig, setAlertConfig] = useState({ 
+    isVisible: false, 
+    type: '', 
+    title: '', 
+    message: '', 
+    buttons: [] 
+  });
 
-  const times = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM'];
-  const services = ['Masaje', 'Facial', 'Pedicura', 'Corte de pelo'];
+  const services = [
+    { id: 1, name: 'Corte de Cabello', icon: 'cut', description: 'Corte y estilo' },
+    { id: 2, name: 'Tinte', icon: 'color-palette', description: 'Coloración completa' },
+    { id: 3, name: 'Mechas', icon: 'contrast', description: 'Mechas y rayitos' },
+    { id: 4, name: 'Peinado', icon: 'brush', description: 'Peinados para eventos' },
+    { id: 5, name: 'Alisado', icon: 'resize', description: 'Alisado permanente' },
+    { id: 6, name: 'Tratamiento', icon: 'water', description: 'Tratamientos capilares' },
+    { id: 7, name: 'Lavado', icon: 'water-outline', description: 'Lavado y secado' },
+    { id: 8, name: 'Barba', icon: 'man', description: 'Corte y arreglo de barba' }
+  ];
+
+  // Efecto para mantener el estado al volver de la pantalla de términos
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        // Cleanup si es necesario
+      };
+    }, [])
+  );
 
   useEffect(() => {
     checkLoginStatus();
-    
-    (async () => {
+    fetchBusinessHours();
+    requestImagePermissions();
+  }, []);
+
+  const requestImagePermissions = async () => {
+    if (Platform.OS !== 'web') {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        showAlert('error', 'Permisos requeridos', 'Se necesitan permisos para acceder a la galería de imágenes.', [
-          { text: 'OK', onPress: hideAlert }
-        ]);
+        showAlert(
+          'error',
+          'Permisos requeridos',
+          'Necesitamos acceso a tu galería para agregar imágenes de referencia.',
+          [{ text: 'OK', onPress: hideAlert }]
+        );
       }
-    })();
-
-    console.log('Estado de autenticación:', { isLoggedIn, user });
-  }, [isLoggedIn, user, navigation]);
+    }
+  };
 
   const checkLoginStatus = () => {
     if (!isLoggedIn || !user) {
-      showAlert('error', 'Acceso denegado', 'Debes iniciar sesión para hacer una reservación.', [
-        { text: 'Iniciar sesión', onPress: () => navigation.replace('Login') },
-        { text: 'Cancelar', onPress: () => navigation.goBack() }
-      ]);
+      showAlert(
+        'error',
+        'Acceso denegado',
+        'Debes iniciar sesión para hacer una reservación.',
+        [
+          { text: 'Iniciar sesión', onPress: () => navigation.replace('Login') },
+          { text: 'Cancelar', onPress: () => navigation.goBack() }
+        ]
+      );
     }
   };
 
   const showAlert = (type, title, message, buttons) => {
     setAlertConfig({ isVisible: true, type, title, message, buttons });
+    console.log('Mostrando alerta:', { type, title, message }); // Debug
   };
 
   const hideAlert = () => {
     setAlertConfig({ ...alertConfig, isVisible: false });
   };
 
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-      base64: true,
-    });
-
-    if (!result.canceled) {
-      setImage(result.assets[0].base64);
+  const fetchBusinessHours = async () => {
+    try {
+      const response = await fetch(
+        `https://www.jaydey.com/ServicesMovil/api/business/${businessId}`
+      );
+      const data = await response.json();
+      if (data.success && data.business.opening_hours) {
+        setBusinessHours(data.business.opening_hours);
+        console.log('Horarios cargados:', data.business.opening_hours);
+      }
+    } catch (error) {
+      console.error('Error fetching business hours:', error);
+      showAlert(
+        'error',
+        'Error',
+        'No se pudieron cargar los horarios del negocio.',
+        [{ text: 'OK', onPress: hideAlert }]
+      );
     }
+  };
+
+  const generateTimeSlots = () => {
+    if (!businessHours) return [];
+
+    const slots = [];
+    const addTimeSlots = (timeRange) => {
+      const [start, end] = timeRange.split(' - ');
+      const [startHour, startMinute] = start.split(':').map(Number);
+      const [endHour, endMinute] = end.split(':').map(Number);
+
+      let currentHour = startHour;
+      let currentMinute = startMinute;
+
+      while (currentHour < endHour || (currentHour === endHour && currentMinute <= endMinute)) {
+        let formattedHour = currentHour.toString().padStart(2, '0');
+        let formattedMinute = currentMinute.toString().padStart(2, '0');
+        let timeString = `${formattedHour}:${formattedMinute}`;
+        
+        let period = currentHour >= 12 ? 'PM' : 'AM';
+        let displayHour = currentHour > 12 ? currentHour - 12 : currentHour;
+        displayHour = displayHour === 0 ? 12 : displayHour;
+        
+        slots.push({
+          value: timeString,
+          display: `${displayHour}:${formattedMinute} ${period}`
+        });
+
+        currentMinute += 30;
+        if (currentMinute >= 60) {
+          currentHour += 1;
+          currentMinute = 0;
+        }
+      }
+    };
+
+    if (businessHours.turno_1) addTimeSlots(businessHours.turno_1);
+    if (businessHours.turno_2) addTimeSlots(businessHours.turno_2);
+
+    return slots;
+  };
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setImage(result.assets[0].base64);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      showAlert(
+        'error',
+        'Error',
+        'No se pudo cargar la imagen. Intenta de nuevo.',
+        [{ text: 'OK', onPress: hideAlert }]
+      );
+    }
+  };
+
+  const validateReservation = () => {
+    if (!selectedDate) {
+      showAlert('error', 'Campos requeridos', 'Por favor selecciona una fecha.', [
+        { text: 'OK', onPress: hideAlert }
+      ]);
+      return false;
+    }
+    if (!selectedTime) {
+      showAlert('error', 'Campos requeridos', 'Por favor selecciona una hora.', [
+        { text: 'OK', onPress: hideAlert }
+      ]);
+      return false;
+    }
+    if (!selectedService) {
+      showAlert('error', 'Campos requeridos', 'Por favor selecciona un servicio.', [
+        { text: 'OK', onPress: hideAlert }
+      ]);
+      return false;
+    }
+    if (!termsAccepted) {
+      showAlert('error', 'Términos y condiciones', 'Debes aceptar los términos y condiciones para continuar.', [
+        { text: 'OK', onPress: hideAlert }
+      ]);
+      return false;
+    }
+    return true;
   };
 
   const handleReservation = async () => {
@@ -83,35 +231,23 @@ const ReservationScreen = ({ route, navigation }) => {
       return;
     }
 
-    if (!termsAccepted) {
-      showAlert('error', 'Error', 'Debes aceptar los términos y condiciones', [
-        { text: 'OK', onPress: hideAlert }
-      ]);
-      return;
-    }
-
-    if (!selectedDate || !selectedTime || !selectedService) {
-      showAlert('error', 'Error', 'Por favor, completa todos los campos requeridos.', [
-        { text: 'OK', onPress: hideAlert }
-      ]);
+    if (!validateReservation()) {
       return;
     }
 
     setIsLoading(true);
 
     const reservationData = {
-      businessId, 
-      selectedTime,
+      businessId,
+      userId: user.uid,
       date: selectedDate,
+      selectedTime,
       serviceType: selectedService,
-      requestDetails: petition,
-      comments,
+      requestDetails: petition.trim(), // Cambiado a requestDetails como espera el backend
+      comments: comments.trim(),
       termsAccepted,
       image: image ? `data:image/jpeg;base64,${image}` : null,
-      userId: user.uid, 
     };
-
-    console.log('Datos de reservación a enviar:', reservationData);
 
     try {
       const response = await fetch('https://www.jaydey.com/ServicesMovil/api/reservation', {
@@ -126,22 +262,31 @@ const ReservationScreen = ({ route, navigation }) => {
       console.log('Respuesta del servidor:', data);
 
       if (data.success) {
-        showAlert('success', 'Éxito', data.message, [
-          { text: 'OK', onPress: () => {
-            hideAlert();
-            navigation.navigate('HomeTabs');
-          }}
-        ]);
+        showAlert(
+          'success',
+          '¡Reservación exitosa!',
+          'Tu cita ha sido programada correctamente.',
+          [
+            {
+              text: 'Ver mis reservaciones',
+              onPress: () => {
+                hideAlert();
+                navigation.navigate('HomeTabs', { screen: 'Reservaciones' });
+              }
+            }
+          ]
+        );
       } else {
-        showAlert('error', 'Error', data.message || 'Hubo un problema al realizar la reservación', [
-          { text: 'OK', onPress: hideAlert }
-        ]);
+        throw new Error(data.message || 'Error al procesar la reservación');
       }
     } catch (error) {
-      console.error('Error al enviar la reservación:', error);
-      showAlert('error', 'Error', 'Hubo un problema al conectar con el servidor. Por favor, inténtalo de nuevo.', [
-        { text: 'OK', onPress: hideAlert }
-      ]);
+      console.error('Error creating reservation:', error);
+      showAlert(
+        'error',
+        'Error',
+        'No se pudo procesar tu reservación. Por favor, intenta de nuevo.',
+        [{ text: 'OK', onPress: hideAlert }]
+      );
     } finally {
       setIsLoading(false);
     }
@@ -161,139 +306,213 @@ const ReservationScreen = ({ route, navigation }) => {
       </View>
     );
   }
-
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Text style={styles.termsButton} onPress={() => navigation.navigate('TermsAndPrivacy', { viewType: 'terms' })}>Términos y Condiciones</Text>
-        </TouchableOpacity>
+      <View style={styles.toleranceCard}>
+        <Ionicons name="time" size={24} color="#FF69B4" style={styles.toleranceIcon} />
+        <View style={styles.toleranceTextContainer}>
+          <Text style={styles.toleranceTitle}>10 Minutos de tolerancia</Text>
+          <Text style={styles.toleranceDescription} numberOfLines={2}>
+            Por favor llega a tiempo. Después del tiempo de tolerancia, tu cita podría ser reasignada.
+          </Text>
+        </View>
       </View>
 
-      <View style={styles.toleranceNotice}>
-        <Text style={styles.toleranceTitle}>10 Minutos de tolerancia</Text>
-        <Text style={styles.toleranceDescription}>Si no puedes cumplir, alguien más tomará tu lugar...</Text>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Servicios Disponibles</Text>
+        <View style={styles.servicesGrid}>
+          {services.map((service) => (
+            <TouchableOpacity
+              key={service.id}
+              style={[
+                styles.serviceCard,
+                selectedService === service.name && styles.selectedServiceCard
+              ]}
+              onPress={() => setSelectedService(service.name)}
+            >
+              <Ionicons 
+                name={service.icon} 
+                size={24} 
+                color={selectedService === service.name ? 'white' : '#FF69B4'} 
+              />
+              <Text style={[
+                styles.serviceText,
+                selectedService === service.name && styles.selectedServiceText
+              ]}>
+                {service.name}
+              </Text>
+              <Text style={[
+                styles.serviceDescription,
+                selectedService === service.name && styles.selectedServiceText
+              ]}>
+                {service.description}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Selecciona Fecha y Hora</Text>
-
-      <Text style={styles.label}>Hora:</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeContainer}>
-        {times.map((time) => (
-          <TouchableOpacity
-            key={time}
-            style={[styles.timeButton, selectedTime === time && styles.selectedTime]}
-            onPress={() => setSelectedTime(time)}
-          >
-            <Text style={[styles.timeText, selectedTime === time && styles.selectedTimeText]}>{time}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      <Text style={styles.label}>Fecha:</Text>
-      <Calendar
-        onDayPress={(day) => setSelectedDate(day.dateString)}
-        markedDates={{[selectedDate]: {selected: true, selectedColor: 'blue'}}}
-        theme={{
-          backgroundColor: '#ffffff',
-          calendarBackground: '#ffffff',
-          textSectionTitleColor: '#b6c1cd',
-          selectedDayBackgroundColor: '#00adf5',
-          selectedDayTextColor: '#ffffff',
-          todayTextColor: '#00adf5',
-          dayTextColor: '#2d4150',
-          textDisabledColor: '#d9e1e8',
-          dotColor: '#00adf5',
-          selectedDotColor: '#ffffff',
-          arrowColor: 'orange',
-          monthTextColor: 'blue',
-          indicatorColor: 'blue',
-          textDayFontWeight: '300',
-          textMonthFontWeight: 'bold',
-          textDayHeaderFontWeight: '300',
-          textDayFontSize: 16,
-          textMonthFontSize: 16,
-          textDayHeaderFontSize: 16
-        }}
-      />
-
-      <Text style={styles.sectionTitle}>Tipo de Servicio</Text>
-      <View style={styles.serviceContainer}>
-        {services.map((service) => (
-          <TouchableOpacity
-            key={service}
-            style={[styles.serviceButton, selectedService === service && styles.selectedService]}
-            onPress={() => setSelectedService(service)}
-          >
-            <Text style={[styles.serviceText, selectedService === service && styles.selectedServiceText]}>{service}</Text>
-          </TouchableOpacity>
-        ))}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Fecha de la Cita</Text>
+        <Calendar
+          minDate={new Date().toISOString().split('T')[0]}
+          onDayPress={(day) => setSelectedDate(day.dateString)}
+          markedDates={{
+            [selectedDate]: { 
+              selected: true, 
+              selectedColor: '#FF69B4',
+              selectedTextColor: 'white'
+            }
+          }}
+          theme={{
+            backgroundColor: '#ffffff',
+            calendarBackground: '#ffffff',
+            textSectionTitleColor: '#666666',
+            selectedDayBackgroundColor: '#FF69B4',
+            selectedDayTextColor: '#ffffff',
+            todayTextColor: '#FF69B4',
+            dayTextColor: '#2d4150',
+            textDisabledColor: '#d9e1e8',
+            monthTextColor: '#FF69B4',
+            indicatorColor: '#FF69B4',
+            textDayFontFamily: 'System',
+            textMonthFontFamily: 'System',
+            textDayHeaderFontFamily: 'System',
+            textDayFontWeight: '300',
+            textMonthFontWeight: 'bold',
+            textDayHeaderFontWeight: '300',
+            textDayFontSize: 16,
+            textMonthFontSize: 16,
+            textDayHeaderFontSize: 16
+          }}
+        />
       </View>
 
-      <Text style={styles.sectionTitle}>Petición</Text>
-      <TextInput
-        style={styles.petitionInput}
-        placeholder="Proporciona un ejemplo de lo que deseas que te hagan al agregar tu solicitud de servicio."
-        multiline
-        value={petition}
-        onChangeText={setPetition}
-      />
-
-      <Text style={styles.sectionTitle}>Subir Imágenes</Text>
-      <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-        <Text style={styles.uploadButtonText}>Seleccionar Imagen</Text>
-      </TouchableOpacity>
-      {image && <Image source={{ uri: `data:image/jpeg;base64,${image}` }} style={styles.uploadedImage} />}
-
-      <TextInput
-        style={styles.commentsInput}
-        placeholder="Agrega comentarios adicionales"
-        value={comments}
-        onChangeText={setComments}
-      />
-
-      <View style={styles.reminderContainer}>
-        <Ionicons name="alarm-outline" size={24} color="red" />
-        <Text style={styles.reminderText}>Diez minutos antes podrían evitar que pierdas la reservación</Text>
-      </View>
-
-      <Text style={styles.policyNotice}>Aviso: Revisa nuestra política de puntualidad</Text>
-
-      <View style={styles.termsContainer}>
-        <TouchableOpacity 
-          style={styles.checkbox}
-          onPress={() => setTermsAccepted(!termsAccepted)}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Horarios Disponibles</Text>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.timeScrollView}
         >
-          {termsAccepted && <Ionicons name="checkmark" size={18} color="blue" />}
+          {generateTimeSlots().map((slot) => (
+            <TouchableOpacity
+              key={slot.value}
+              style={[
+                styles.timeCard,
+                selectedTime === slot.value && styles.selectedTimeCard
+              ]}
+              onPress={() => setSelectedTime(slot.value)}
+            >
+              <Text style={[
+                styles.timeText,
+                selectedTime === slot.value && styles.selectedTimeText
+              ]}>
+                {slot.display}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Detalles del Servicio</Text>
+        <TextInput
+          style={styles.petitionInput}
+          placeholder="Proporciona un ejemplo de lo que deseas que te hagan al agregar tu solicitud de servicio."
+          multiline
+          value={petition}
+          onChangeText={setPetition}
+          placeholderTextColor="#999"
+        />
+
+        <TextInput
+          style={styles.commentsInput}
+          placeholder="Agrega comentarios adicionales"
+          multiline
+          value={comments}
+          onChangeText={setComments}
+          placeholderTextColor="#999"
+        />
+        
+        <TouchableOpacity 
+          style={styles.imageUploadButton} 
+          onPress={pickImage}
+        >
+          <Ionicons name="image" size={24} color="#FF69B4" />
+          <Text style={styles.imageUploadText}>
+            {image ? 'Cambiar imagen de referencia' : 'Agregar imagen de referencia'}
+          </Text>
         </TouchableOpacity>
-        <Text style={styles.termsText}>Aceptar Términos y condiciones</Text>
-        <TouchableOpacity>
-          <Text style={styles.readPoliciesButton} onPress={() => navigation.navigate('TermsAndPrivacy', { viewType: 'privacy' })}>Leer Políticas</Text>
-        </TouchableOpacity>
+        
+        {image && (
+          <View style={styles.imagePreviewContainer}>
+            <Image 
+              source={{ uri: `data:image/jpeg;base64,${image}` }} 
+              style={styles.imagePreview} 
+            />
+            <TouchableOpacity 
+              style={styles.removeImageButton}
+              onPress={() => setImage(null)}
+            >
+              <Ionicons name="close-circle" size={24} color="#FF69B4" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.termsSection}>
+        <View style={styles.policiesContainer}>
+          <TouchableOpacity 
+            style={styles.checkboxContainer}
+            onPress={() => setTermsAccepted(!termsAccepted)}
+          >
+            <View style={[styles.checkbox, termsAccepted && styles.checkedBox]}>
+              {termsAccepted && <Ionicons name="checkmark" size={18} color="white" />}
+            </View>
+            <Text style={styles.termsText}>Aceptar</Text>
+          </TouchableOpacity>
+
+          <View style={styles.policiesLinks}>
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('TermsAndPrivacy', { viewType: 'terms' })}
+              style={styles.policyLinkContainer}
+            >
+              <Text style={styles.policyLink}>Términos y condiciones</Text>
+            </TouchableOpacity>
+            <Text style={styles.policyDivider}>|</Text>
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('TermsAndPrivacy', { viewType: 'privacy' })}
+              style={styles.policyLinkContainer}
+            >
+              <Text style={styles.policyLink}>Políticas</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           style={styles.cancelButton} 
-          onPress={() => navigation.goBack()} 
+          onPress={() => navigation.goBack()}
           disabled={isLoading}
         >
           <Text style={styles.cancelButtonText}>Cancelar</Text>
         </TouchableOpacity>
+        
         <TouchableOpacity 
-          style={[styles.reserveButton, (isLoading || !termsAccepted) && styles.disabledButton]}
+          style={[
+            styles.reserveButton,
+            (!termsAccepted || isLoading) && styles.disabledButton
+          ]}
           onPress={handleReservation}
-          disabled={isLoading || !termsAccepted}
+          disabled={!termsAccepted || isLoading}
         >
           <Text style={styles.reserveButtonText}>
-            {isLoading ? 'Reservando...' : 'Reservar'}
+            {isLoading ? 'Reservando...' : 'Confirmar Reservación'}
           </Text>
         </TouchableOpacity>
       </View>
-
 
       <CustomAlert
         isVisible={alertConfig.isVisible}
@@ -310,185 +529,303 @@ const ReservationScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: '#F8F9FA',
   },
-  header: {
+  toleranceCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  termsButton: {
-    color: 'blue',
-    fontSize: 12,
-  },
-  toleranceNotice: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'white',
+    margin: 16,
     padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    alignItems: 'flex-start',
+  },
+  toleranceIcon: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  toleranceTextContainer: {
+    flex: 1,
   },
   toleranceTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 8,
+    color: '#333',
+    marginBottom: 4,
   },
   toleranceDescription: {
     fontSize: 14,
     color: '#666',
+    lineHeight: 20,
+    flexWrap: 'wrap',
+  },
+  section: {
+    backgroundColor: 'white',
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  timeContainer: {
-    flexDirection: 'row',
+    color: '#333',
     marginBottom: 16,
   },
-  timeButton: {
-    padding: 8,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    marginRight: 8,
-  },
-  selectedTime: {
-    backgroundColor: 'blue',
-  },
-  timeText: {
-    color: '#000',
-  },
-  selectedTimeText: {
-    color: '#fff',
-  },
-  serviceContainer: {
+  servicesGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
+  },
+  serviceCard: {
+    width: (width - 80) / 2,
+    padding: 16,
     marginBottom: 16,
-  },
-  serviceButton: {
-    flex: 1,
-    padding: 8,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    marginRight: 8,
+    borderRadius: 12,
+    backgroundColor: 'white',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FF69B4',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  selectedService: {
-    backgroundColor: 'blue',
+  selectedServiceCard: {
+    backgroundColor: '#FF69B4',
   },
   serviceText: {
-    color: '#000',
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+  },
+  serviceDescription: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
   },
   selectedServiceText: {
-    color: '#fff',
+    color: 'white',
+  },
+  timeScrollView: {
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+  },
+  timeCard: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginRight: 12,
+    borderRadius: 8,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#FF69B4',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  selectedTimeCard: {
+    backgroundColor: '#FF69B4',
+  },
+  timeText: {
+    fontSize: 16,
+    color: '#FF69B4',
+    fontWeight: '500',
+  },
+  selectedTimeText: {
+    color: 'white',
   },
   petitionInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    padding: 8,
-    height: 100,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    padding: 16,
+    height: 120,
     textAlignVertical: 'top',
+    fontSize: 16,
+    color: '#333',
+    backgroundColor: '#F8F9FA',
     marginBottom: 16,
-  },
-  uploadButton: {
-    backgroundColor: '#f0f0f0',
-    padding: 12,
-    borderRadius: 4,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  uploadButtonText: {
-    color: '#000',
-    fontWeight: 'bold',
-  },
-  uploadedImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 8,
-    marginBottom: 16,
-    alignSelf: 'center',
   },
   commentsInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    padding: 8,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    padding: 16,
+    height: 120,
+    textAlignVertical: 'top',
+    fontSize: 16,
+    color: '#333',
+    backgroundColor: '#F8F9FA',
     marginBottom: 16,
   },
-  reminderContainer: {
+  imageUploadButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'center',
+    backgroundColor: '#F8F9FA',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#FF69B4',
+    borderStyle: 'dashed',
   },
-  reminderText: {
+  imageUploadText: {
     marginLeft: 8,
-    color: 'red',
+    fontSize: 16,
+    color: '#FF69B4',
   },
-  policyNotice: {
-    textAlign: 'center',
-    marginBottom: 16,
+  imagePreviewContainer: {
+    marginTop: 16,
+    position: 'relative',
+    alignItems: 'center',
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  termsContainer: {
+  imagePreview: {
+    width: width - 64,
+    height: (width - 64) * 0.75,
+    borderRadius: 12,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 4,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  termsSection: {
+    backgroundColor: 'white',
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  policiesContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
+    width: '100%',
+    justifyContent: 'center',
   },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 1,
-    borderColor: '#ccc',
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#FF69B4',
     marginRight: 8,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+  },
+  checkedBox: {
+    backgroundColor: '#FF69B4',
   },
   termsText: {
-    flex: 1,
+    fontSize: 16,
+    color: '#333',
   },
-  readPoliciesButton: {
-    color: 'blue',
+  policiesLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    flexWrap: 'wrap',
+  },
+  policyLinkContainer: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  policyLink: {
+    fontSize: 14,
+    color: '#FF69B4',
+    textDecorationLine: 'underline',
+    paddingHorizontal: 8,
+  },
+  policyDivider: {
+    color: '#666',
+    paddingHorizontal: 4,
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    padding: 10,
+    padding: 16,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
   },
   cancelButton: {
     flex: 1,
+    backgroundColor: '#F8F9FA',
     padding: 16,
-    backgroundColor: '#ccc',
-    borderRadius: 4,
+    borderRadius: 12,
     marginRight: 8,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   cancelButtonText: {
-    color: '#000',
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '600',
   },
   reserveButton: {
-    flex: 1,
+    flex: 2,
+    backgroundColor: '#FF69B4',
     padding: 16,
-    backgroundColor: '#000',
-    borderRadius: 4,
+    borderRadius: 12,
     marginLeft: 8,
     alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  disabledButton: {
+    backgroundColor: '#FFB6C1',
+    opacity: 0.7,
   },
   reserveButtonText: {
-    color: '#fff',
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '600',
   },
 });
 

@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { Alert, Linking, TouchableOpacity } from 'react-native';
+import { 
+  Alert, 
+  Linking, 
+  TouchableOpacity, 
+  Modal, 
+  View, 
+  Text, 
+  StyleSheet,
+  Platform,
+  Dimensions 
+} from 'react-native';
 
 import HomeScreen from '../features/home/HomeScreen';
 import ReservationInfoScreen from '../features/reservation/ReservationInfoScreen';
@@ -22,133 +32,122 @@ import { useAuth } from '../context/AuthContext';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+const { width } = Dimensions.get('window');
 
-const handleHelp = () => {
-  Alert.alert(
-    '¿Necesitas ayuda? 🤝',
-    '¡Estamos aquí para asistirte! Elige cómo prefieres contactarnos:',
-    [
-      {
-        text: '🤳 WhatsApp',
-        style: 'default',
-        onPress: () => {
-          const phoneNumber = '9191409310';
-          const message = 'Hola, necesito ayuda con la aplicación ExternalGlow...';
-          const whatsappUrl = `whatsapp://send?phone=52${phoneNumber}&text=${encodeURIComponent(message)}`;
-          
-          Linking.canOpenURL(whatsappUrl)
-            .then(supported => {
-              if (supported) {
-                return Linking.openURL(whatsappUrl);
-              } else {
-                Alert.alert(
-                  '❌ WhatsApp no disponible',
-                  'Parece que no tienes WhatsApp instalado. ¿Te gustaría intentar otra opción?',
-                  [
-                    {
-                      text: '📧 Usar correo',
-                      onPress: () => {
-                        const email = 'jaydeyglow@gmail.com';
-                        Linking.openURL(`mailto:${email}`);
-                      }
-                    },
-                    {
-                      text: 'Cancelar',
-                      style: 'cancel'
-                    }
-                  ]
-                );
-              }
-            })
-            .catch(err => {
-              console.error('Error al abrir WhatsApp:', err);
-              Alert.alert(
-                'Error de conexión',
-                'No pudimos abrir WhatsApp. Por favor, intenta con otra opción.',
-                [
-                  {text: 'OK', style: 'default'}
-                ]
-              );
-            });
+const HelpModal = ({ visible, onClose }) => {
+  const handleWhatsApp = async () => {
+    const phoneNumber = '9191409310';
+    const message = 'Hola, necesito ayuda con la aplicación ExternalGlow...';
+    
+    try {
+      // Primero intentamos abrir WhatsApp Web
+      const webWhatsapp = `https://wa.me/52${phoneNumber}?text=${encodeURIComponent(message)}`;
+      await Linking.openURL(webWhatsapp);
+    } catch (err) {
+      console.error('Error al abrir WhatsApp:', err);
+      
+      // Si falla WhatsApp Web, intentamos la app nativa
+      try {
+        const whatsappUrl = Platform.select({
+          ios: `whatsapp://send?phone=52${phoneNumber}&text=${encodeURIComponent(message)}`,
+          android: `intent://send?phone=52${phoneNumber}&text=${encodeURIComponent(message)}#Intent;package=com.whatsapp;scheme=whatsapp;end`
+        });
+        
+        const canOpen = await Linking.canOpenURL(whatsappUrl);
+        if (canOpen) {
+          await Linking.openURL(whatsappUrl);
+        } else {
+          handleEmail(); // Fallback a email si no está disponible WhatsApp
         }
-      },
-      {
-        text: '✉️ Correo electrónico',
-        style: 'default',
-        onPress: () => {
-          const email = 'jaydeyglow@gmail.com';
-          const subject = 'Ayuda con ExternalGlow';
-          const body = 'Hola, necesito ayuda con lo siguiente:';
-          const emailUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-          
-          Linking.canOpenURL(emailUrl)
-            .then(supported => {
-              if (supported) {
-                return Linking.openURL(emailUrl);
-              } else {
-                Alert.alert(
-                  '❌ Correo no configurado',
-                  'No encontramos una aplicación de correo configurada. ¿Te gustaría intentar WhatsApp?',
-                  [
-                    {
-                      text: '🤳 Usar WhatsApp',
-                      onPress: () => {
-                        const whatsappUrl = `whatsapp://send?phone=529191409310`;
-                        Linking.openURL(whatsappUrl);
-                      }
-                    },
-                    {
-                      text: 'Cancelar',
-                      style: 'cancel'
-                    }
-                  ]
-                );
-              }
-            })
-            .catch(err => {
-              console.error('Error al abrir el correo:', err);
-              Alert.alert(
-                'Error de conexión',
-                'No pudimos abrir el correo. Por favor, intenta con otra opción.',
-                [
-                  {text: 'OK', style: 'default'}
-                ]
-              );
-            });
-        }
-      },
-      {
-        text: '❌ Cerrar',
-        style: 'cancel'
+      } catch (error) {
+        handleEmail(); // Fallback a email si hay error
       }
-    ],
-    {
-      cancelable: true
     }
+  };
+
+  const handleEmail = async () => {
+    const email = 'jaydeyglow@gmail.com';
+    const subject = 'Ayuda con ExternalGlow';
+    const body = 'Hola, necesito ayuda con lo siguiente:';
+    const emailUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    try {
+      await Linking.openURL(emailUrl);
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        'No se pudo abrir el correo electrónico. Por favor, contáctanos directamente en jaydeyglow@gmail.com',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>¿Necesitas ayuda? 🤝</Text>
+            <Text style={styles.modalSubtitle}>
+              ¡Estamos aquí para asistirte! Elige cómo prefieres contactarnos:
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.contactButton}
+            onPress={handleWhatsApp}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="logo-whatsapp" size={24} color="white" />
+            <Text style={styles.buttonText}>Contactar por WhatsApp</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.contactButton, styles.emailButton]}
+            onPress={handleEmail}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="mail" size={24} color="white" />
+            <Text style={styles.buttonText}>Enviar correo electrónico</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.contactButton, styles.closeButton]}
+            onPress={onClose}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.buttonText}>Cerrar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
   );
 };
 
-const HelpButton = () => (
-  <TouchableOpacity
-    onPress={handleHelp}
-    style={{
-      marginRight: 15,
-      backgroundColor: '#FF69B4',
-      padding: 8,
-      borderRadius: 20,
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-      elevation: 5,
-    }}
-  >
-    <Ionicons name="help-circle" size={24} color="white" />
-  </TouchableOpacity>
-);
+const HelpButton = () => {
+  const [modalVisible, setModalVisible] = useState(false);
+
+  return (
+    <>
+      <TouchableOpacity
+        onPress={() => setModalVisible(true)}
+        style={styles.helpButton}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="help-circle" size={24} color="white" />
+      </TouchableOpacity>
+      <HelpModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+      />
+    </>
+  );
+};
 
 const HomeTabs = () => {
   const { isLoggedIn } = useAuth();
@@ -175,11 +174,26 @@ const HomeTabs = () => {
         tabBarInactiveTintColor: 'gray',
         tabBarStyle: [
           {
-            display: 'flex'
+            display: 'flex',
+            backgroundColor: 'white',
+            borderTopWidth: 1,
+            borderTopColor: '#f0f0f0',
+            paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+            height: Platform.OS === 'ios' ? 85 : 65,
           },
           null
         ],
-        headerRight: () => <HelpButton />
+        headerRight: () => <HelpButton />,
+        headerStyle: {
+          backgroundColor: 'white',
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        headerTitleStyle: {
+          color: '#333',
+          fontSize: 18,
+          fontWeight: '600',
+        }
       })}
     >
       <Tab.Screen name="Inicio" component={HomeScreen} />
@@ -200,7 +214,18 @@ const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={{
-          headerRight: () => <HelpButton />
+          headerRight: () => <HelpButton />,
+          headerStyle: {
+            backgroundColor: 'white',
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+          headerTitleStyle: {
+            color: '#333',
+            fontSize: 18,
+            fontWeight: '600',
+          },
+          headerTintColor: '#FF69B4',
         }}
       >
         <Stack.Screen 
@@ -259,5 +284,93 @@ const AppNavigator = () => {
     </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: width * 0.85,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 10,
+    paddingHorizontal: 20,
+  },
+  contactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#25D366', // Color de WhatsApp
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 30,
+    width: '100%',
+    marginBottom: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+  },
+  emailButton: {
+    backgroundColor: '#FF69B4', // Color rosa para correo
+  },
+  closeButton: {
+    backgroundColor: '#666',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 10,
+  },
+  helpButton: {
+    marginRight: 15,
+    backgroundColor: '#FF69B4',
+    padding: 8,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+});
 
 export default AppNavigator;
