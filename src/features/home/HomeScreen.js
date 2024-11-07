@@ -143,7 +143,7 @@ const BusinessCard = ({ business, navigation }) => {
   
   const handleInteraction = async (type) => {
     if (!user) {
-      showAlert('error', 'Iniciar sesión requerido', 'Para dar like o dislike, por favor inicia sesión o regístrate.', [
+      showAlert('error', 'Iniciar sesión requerido', 'Para reaccionar a los negocios, por favor inicia sesión o regístrate.', [
         {
           text: 'Cancelar',
           style: 'cancel',

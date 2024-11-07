@@ -144,7 +144,6 @@ const ReservationItem = ({
     </TouchableOpacity>
   );
 };
-
 const ReservationsScreen = ({ navigation }) => {
   const [alertConfig, setAlertConfig] = useState({
     isVisible: false,
@@ -158,14 +157,13 @@ const ReservationsScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [lastKnownStates, setLastKnownStates] = useState({});
+  const [loadingStatus, setLoadingStatus] = useState('loading'); // 'loading', 'success', 'error', 'empty'
   const { user } = useAuth();
 
-  // Configuración inicial de notificaciones
   useEffect(() => {
     registerForPushNotifications();
     setupNotificationChannels();
     const notificationListener = setupNotificationListeners();
-    
     return () => {
       if (notificationListener) {
         Notifications.removeNotificationSubscription(notificationListener);
@@ -288,6 +286,7 @@ const ReservationsScreen = ({ navigation }) => {
     
     try {
       setError(null);
+      setLoadingStatus('loading');
       const response = await fetch(
         `https://www.jaydey.com/ServicesMovil/api/user-reservations/${user.uid}`,
         {
@@ -305,12 +304,15 @@ const ReservationsScreen = ({ navigation }) => {
           new Date(b.fecha_creacion) - new Date(a.fecha_creacion)
         );
         setReservations(sortedReservations);
+        setLoadingStatus(sortedReservations.length > 0 ? 'success' : 'empty');
         await checkStateChanges(sortedReservations);
       } else {
         setError('No se pudieron cargar las reservaciones');
+        setLoadingStatus('error');
       }
     } catch (err) {
       setError('Error al conectar con el servidor');
+      setLoadingStatus('error');
       console.error('Error fetching reservations:', err);
     } finally {
       setLoading(false);
@@ -320,7 +322,7 @@ const ReservationsScreen = ({ navigation }) => {
 
   useEffect(() => {
     if (user?.uid) {
-      const intervalId = setInterval(fetchReservations, 30000); // Cada 30 segundos
+      const intervalId = setInterval(fetchReservations, 30000);
       return () => clearInterval(intervalId);
     }
   }, [user]);
@@ -337,6 +339,7 @@ const ReservationsScreen = ({ navigation }) => {
       setLoading(false);
     }
   }, [user]);
+
 
   const handleCancelReservation = async (reservationId) => {
     setAlertConfig({
@@ -424,7 +427,7 @@ const ReservationsScreen = ({ navigation }) => {
 
   if (!user?.uid) return <NoAuthScreen navigation={navigation} />;
   if (loading) return <View style={styles.centerContainer}><ActivityIndicator size="large" color="#000" /></View>;
-  if (error) {
+  if (loadingStatus === 'error') {
     return (
       <View style={styles.centerContainer}>
         <Ionicons name="alert-circle-outline" size={48} color="#F44336" />
@@ -435,11 +438,12 @@ const ReservationsScreen = ({ navigation }) => {
       </View>
     );
   }
-  if (reservations.length === 0) {
+  if (loadingStatus === 'empty' || reservations.length === 0) {
     return (
       <View style={styles.centerContainer}>
-        <Ionicons name="calendar-outline" size={48} color="#666" />
-        <Text style={styles.noReservationsText}>No tienes reservaciones activas</Text>
+        <Ionicons name="checkmark-circle-outline" size={48} color="#4CAF50" />
+        <Text style={styles.noReservationsText}>¡Estás al día!</Text>
+        <Text style={styles.subText}>No tienes reservaciones pendientes por revisar</Text>
         <TouchableOpacity style={styles.refreshButton} onPress={fetchReservations}>
           <Ionicons name="refresh-outline" size={20} color="#FFF" />
           <Text style={styles.refreshButtonText}>Actualizar</Text>
@@ -484,7 +488,6 @@ const ReservationsScreen = ({ navigation }) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -675,5 +678,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  subText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 24,
+    paddingHorizontal: 20,
+  },
+  noReservationsText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  }
 });
 export default ReservationsScreen;
