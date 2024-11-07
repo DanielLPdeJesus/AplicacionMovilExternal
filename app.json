@@ -21,14 +21,6 @@
           "icon": "./assets/icono-noti.png",
           "color": "#ffffff"
         }
-      ],
-      [
-        "expo-font",
-        {
-          "fonts": [
-            "@expo/vector-icons/Ionicons"
-          ]
-        }
       ]
     ],
     "ios": {

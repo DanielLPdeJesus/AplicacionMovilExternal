@@ -14,6 +14,7 @@ import RegisterScreen from '../features/auth/RegisterScreen';
 import ReservationScreen from '../features/reservation/ReservationScreen';
 import ViewBussinesScreen from '../features/bussines/ViewBussinesScreen';
 import ReservationDetailsScreen from '../features/reservation/ReservationDetailsScreen';
+import CommentsScreen from '../features/bussines/CommentsScreen';
 
 import { useAuth } from '../context/AuthContext';
 
@@ -82,6 +83,8 @@ const AppNavigator = () => {
         )}
         <Stack.Screen name="Reservation" component={ReservationScreen} options={{ title: 'Reservación' }} />
         <Stack.Screen name="ViewBussinesScreen" component={ViewBussinesScreen} options={{ title: 'Ver Negocio' }} />
+
+        <Stack.Screen name="CommentsScreen" component={CommentsScreen} options={{ title: 'Comentarios Negocio'}}/>
         <Stack.Screen 
   name="Detalles" 
   component={ReservationDetailsScreen} 

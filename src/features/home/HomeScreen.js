@@ -70,7 +70,7 @@ const BusinessCard = ({ business, navigation }) => {
   };
 
   const handleComment = () => {
-    navigation.navigate('Comments', { 
+    navigation.navigate('CommentsScreen', { 
       businessId: business.id,
       businessName: business.nombre_negocio
     });
@@ -148,7 +148,7 @@ const BusinessCard = ({ business, navigation }) => {
               color="#666"
             />
           </TouchableOpacity>
-          <Text style={styles.socialCount}>{commentCount}</Text>
+          <Text style={styles.socialCount}>{business.numero_resenas}</Text>
         </View>
       </View>
     </View>
