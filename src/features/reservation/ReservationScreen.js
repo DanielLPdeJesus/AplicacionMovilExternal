@@ -9,7 +9,6 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
-  Alert
 } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +28,136 @@ LocaleConfig.locales['es'] = {
 };
 LocaleConfig.defaultLocale = 'es';
 
+// Componente TimeSlots
+const getReservationsForDate = async (businessId, selectedDate) => {
+  try {
+    const response = await fetch(
+      `https://www.jaydey.com/ServicesMovil/api/business-reservations/${businessId}/${selectedDate}`
+    );
+    const data = await response.json();
+    if (data.success) {
+      // Solo filtrar las reservaciones aceptadas o concluidas
+      return data.reservations.filter(res => 
+        res.estado === 'aceptada' || res.estado === 'concluido'
+      );
+    }
+    return [];
+  } catch (error) {
+    console.error('Error fetching reservations:', error);
+    return [];
+  }
+};
+
+const TimeSlots = ({ businessId, businessHours, selectedDate, onSelectTime }) => {
+  const [timeSlots, setTimeSlots] = useState([]);
+  const [selectedTime, setSelectedTime] = useState('');
+
+  useEffect(() => {
+    const loadTimeSlots = async () => {
+      if (selectedDate && businessHours) {
+        const reservations = await getReservationsForDate(businessId, selectedDate);
+        const slots = generateTimeSlots(businessHours, reservations);
+        setTimeSlots(slots);
+        setSelectedTime('');
+      }
+    };
+
+    loadTimeSlots();
+  }, [selectedDate, businessHours, businessId]);
+
+  const handleTimeSelection = (time) => {
+    if (time.available) {
+      setSelectedTime(time.value);
+      onSelectTime(time.value);
+    }
+  };
+
+  const generateTimeSlots = (businessHours, existingReservations = []) => {
+    if (!businessHours) return [];
+  
+    const slots = [];
+    const reservedTimes = new Set(
+      existingReservations.map(reservation => reservation.hora_seleccionada)
+    );
+  
+    const addTimeSlots = (timeRange) => {
+      const [start, end] = timeRange.split(' - ');
+      const [startHour, startMinute] = start.split(':').map(Number);
+      const [endHour, endMinute] = end.split(':').map(Number);
+  
+      let currentTimeInMinutes = startHour * 60 + startMinute;
+      const endTimeInMinutes = endHour * 60 + endMinute;
+  
+      while (currentTimeInMinutes <= endTimeInMinutes - 60) {
+        let currentHour = Math.floor(currentTimeInMinutes / 60);
+        let currentMinute = currentTimeInMinutes % 60;
+        
+        let formattedHour = currentHour.toString().padStart(2, '0');
+        let formattedMinute = currentMinute.toString().padStart(2, '0');
+        let timeString = `${formattedHour}:${formattedMinute}`;
+        
+        let period = currentHour >= 12 ? 'PM' : 'AM';
+        let displayHour = currentHour > 12 ? currentHour - 12 : currentHour;
+        displayHour = displayHour === 0 ? 12 : displayHour;
+        
+        const isTimeAvailable = !reservedTimes.has(timeString);
+        
+        if (currentTimeInMinutes + 60 <= endTimeInMinutes) {
+          slots.push({
+            value: timeString,
+            display: `${displayHour}:${formattedMinute} ${period}`,
+            available: isTimeAvailable
+          });
+        }
+  
+        currentTimeInMinutes += 60;
+      }
+    };
+  
+    if (businessHours.turno_1) addTimeSlots(businessHours.turno_1);
+    if (businessHours.turno_2) addTimeSlots(businessHours.turno_2);
+  
+    return slots.sort((a, b) => {
+      const [aHour, aMinute] = a.value.split(':').map(Number);
+      const [bHour, bMinute] = b.value.split(':').map(Number);
+      return (aHour * 60 + aMinute) - (bHour * 60 + bMinute);
+    });
+  };
+
+  return (
+    <ScrollView 
+      horizontal 
+      showsHorizontalScrollIndicator={false}
+      style={styles.timeScrollView}
+    >
+      {timeSlots.map((slot, index) => (
+        <TouchableOpacity
+          key={index}
+          style={[
+            styles.timeCard,
+            !slot.available && styles.unavailableTimeCard,
+            selectedTime === slot.value && styles.selectedTimeCard
+          ]}
+          onPress={() => handleTimeSelection(slot)}
+          disabled={!slot.available}
+        >
+          <Text style={[
+            styles.timeText,
+            !slot.available && styles.unavailableTimeText,
+            selectedTime === slot.value && styles.selectedTimeText
+          ]}>
+            {slot.display}
+          </Text>
+          {!slot.available && (
+            <Text style={styles.reservedText}>Reservado</Text>
+          )}
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+};
+
+// Componente principal ReservationScreen
 const ReservationScreen = ({ route, navigation }) => {
   const { isLoggedIn, user } = useAuth();
   const [selectedDate, setSelectedDate] = useState('');
@@ -60,7 +189,6 @@ const ReservationScreen = ({ route, navigation }) => {
     { id: 8, name: 'Barba', icon: 'man', description: 'Corte y arreglo de barba' }
   ];
 
-  // Efecto para mantener el estado al volver de la pantalla de términos
   useFocusEffect(
     React.useCallback(() => {
       return () => {
@@ -105,7 +233,7 @@ const ReservationScreen = ({ route, navigation }) => {
 
   const showAlert = (type, title, message, buttons) => {
     setAlertConfig({ isVisible: true, type, title, message, buttons });
-    console.log('Mostrando alerta:', { type, title, message }); // Debug
+    console.log('Mostrando alerta:', { type, title, message });
   };
 
   const hideAlert = () => {
@@ -120,7 +248,6 @@ const ReservationScreen = ({ route, navigation }) => {
       const data = await response.json();
       if (data.success && data.business.opening_hours) {
         setBusinessHours(data.business.opening_hours);
-        console.log('Horarios cargados:', data.business.opening_hours);
       }
     } catch (error) {
       console.error('Error fetching business hours:', error);
@@ -132,54 +259,7 @@ const ReservationScreen = ({ route, navigation }) => {
       );
     }
   };
-  const generateTimeSlots = () => {
-    if (!businessHours) return [];
-  
-    const slots = [];
-    const addTimeSlots = (timeRange) => {
-      const [start, end] = timeRange.split(' - ');
-      const [startHour, startMinute] = start.split(':').map(Number);
-      const [endHour, endMinute] = end.split(':').map(Number);
-  
-      // Convertir todo a minutos para facilitar los cálculos
-      let currentTimeInMinutes = startHour * 60 + startMinute;
-      const endTimeInMinutes = endHour * 60 + endMinute;
-  
-      while (currentTimeInMinutes <= endTimeInMinutes - 60) { // Restamos 60 para asegurar que haya al menos 1 hora disponible
-        let currentHour = Math.floor(currentTimeInMinutes / 60);
-        let currentMinute = currentTimeInMinutes % 60;
-        
-        let formattedHour = currentHour.toString().padStart(2, '0');
-        let formattedMinute = currentMinute.toString().padStart(2, '0');
-        let timeString = `${formattedHour}:${formattedMinute}`;
-        
-        let period = currentHour >= 12 ? 'PM' : 'AM';
-        let displayHour = currentHour > 12 ? currentHour - 12 : currentHour;
-        displayHour = displayHour === 0 ? 12 : displayHour;
-        
-        // Si el slot actual permite una hora completa de servicio
-        if (currentTimeInMinutes + 60 <= endTimeInMinutes) {
-          slots.push({
-            value: timeString,
-            display: `${displayHour}:${formattedMinute} ${period}`
-          });
-        }
-  
-        // Avanzamos 60 minutos (1 hora)
-        currentTimeInMinutes += 60;
-      }
-    };
-  
-    if (businessHours.turno_1) addTimeSlots(businessHours.turno_1);
-    if (businessHours.turno_2) addTimeSlots(businessHours.turno_2);
-  
-    // Ordenamos los slots por hora
-    return slots.sort((a, b) => {
-      const [aHour, aMinute] = a.value.split(':').map(Number);
-      const [bHour, bMinute] = b.value.split(':').map(Number);
-      return (aHour * 60 + aMinute) - (bHour * 60 + bMinute);
-    });
-  };
+
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -237,19 +317,19 @@ const ReservationScreen = ({ route, navigation }) => {
     }
     return true;
   };
-  
+
   const handleReservation = async () => {
     if (!isLoggedIn || !user) {
       checkLoginStatus();
       return;
     }
-  
+
     if (!validateReservation()) {
       return;
     }
-  
+
     setIsLoading(true);
-  
+
     const reservationData = {
       businessId,
       userId: user.uid,
@@ -261,7 +341,7 @@ const ReservationScreen = ({ route, navigation }) => {
       termsAccepted,
       image: image ? `data:image/jpeg;base64,${image}` : null,
     };
-  
+
     try {
       const response = await fetch('https://www.jaydey.com/ServicesMovil/api/reservation', {
         method: 'POST',
@@ -270,10 +350,9 @@ const ReservationScreen = ({ route, navigation }) => {
         },
         body: JSON.stringify(reservationData),
       });
-  
+
       const data = await response.json();
-      console.log('Respuesta del servidor:', data);
-  
+
       if (response.status === 409) {
         showAlert(
           'error',
@@ -283,7 +362,7 @@ const ReservationScreen = ({ route, navigation }) => {
         );
         return;
       }
-  
+
       if (data.success) {
         showAlert(
           'success',
@@ -329,6 +408,7 @@ const ReservationScreen = ({ route, navigation }) => {
       </View>
     );
   }
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.toleranceCard}>
@@ -413,29 +493,12 @@ const ReservationScreen = ({ route, navigation }) => {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Horarios Disponibles</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.timeScrollView}
-        >
-          {generateTimeSlots().map((slot) => (
-            <TouchableOpacity
-              key={slot.value}
-              style={[
-                styles.timeCard,
-                selectedTime === slot.value && styles.selectedTimeCard
-              ]}
-              onPress={() => setSelectedTime(slot.value)}
-            >
-              <Text style={[
-                styles.timeText,
-                selectedTime === slot.value && styles.selectedTimeText
-              ]}>
-                {slot.display}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <TimeSlots 
+          businessId={businessId}
+          businessHours={businessHours}
+          selectedDate={selectedDate}
+          onSelectTime={setSelectedTime}
+        />
       </View>
 
       <View style={styles.section}>
@@ -660,6 +723,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
+  unavailableTimeCard: {
+    backgroundColor: '#F5F5F5',
+    borderColor: '#E0E0E0',
+  },
   selectedTimeCard: {
     backgroundColor: '#FF69B4',
   },
@@ -668,8 +735,17 @@ const styles = StyleSheet.create({
     color: '#FF69B4',
     fontWeight: '500',
   },
+  unavailableTimeText: {
+    color: '#999',
+  },
   selectedTimeText: {
     color: 'white',
+  },
+  reservedText: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+    textAlign: 'center',
   },
   petitionInput: {
     borderWidth: 1,
