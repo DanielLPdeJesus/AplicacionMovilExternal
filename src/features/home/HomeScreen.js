@@ -227,6 +227,22 @@ const BusinessCard = ({ business, navigation }) => {
     });
   };
 
+  const handleReservation = () => {
+    if (!business.pagado) {
+      showAlert(
+        'info',
+        'Negocio en Proceso',
+        'El negocio no está disponible para reservaciones en este momento. Próximamente podrá atender tus reservaciones.',
+        [{
+          text: 'Entendido',
+          onPress: () => setAlertConfig(prev => ({ ...prev, isVisible: false }))
+        }]
+      );
+    } else {
+      navigation.navigate('Reservation', { businessId: business.id });
+    }
+  };
+
   return (
     <View style={styles.businessCard}>
       <Image 
@@ -248,10 +264,16 @@ const BusinessCard = ({ business, navigation }) => {
           <Text style={styles.actionButtonText}>Ver más</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.actionButton, styles.reserveButton]}
-          onPress={() => navigation.navigate('Reservation', { businessId: business.id })}
+          style={[
+            styles.actionButton, 
+            styles.reserveButton,
+            !business.pagado && styles.disabledButton
+          ]}
+          onPress={handleReservation}
         >
-          <Text style={[styles.actionButtonText, styles.reserveButtonText]}>Reservar</Text>
+          <Text style={[styles.actionButtonText, styles.reserveButtonText]}>
+            {business.pagado ? 'Reservar' : 'No disponible'}
+          </Text>
         </TouchableOpacity>
       </View>
       

@@ -132,20 +132,23 @@ const ReservationScreen = ({ route, navigation }) => {
       );
     }
   };
-
   const generateTimeSlots = () => {
     if (!businessHours) return [];
-
+  
     const slots = [];
     const addTimeSlots = (timeRange) => {
       const [start, end] = timeRange.split(' - ');
       const [startHour, startMinute] = start.split(':').map(Number);
       const [endHour, endMinute] = end.split(':').map(Number);
-
-      let currentHour = startHour;
-      let currentMinute = startMinute;
-
-      while (currentHour < endHour || (currentHour === endHour && currentMinute <= endMinute)) {
+  
+      // Convertir todo a minutos para facilitar los cálculos
+      let currentTimeInMinutes = startHour * 60 + startMinute;
+      const endTimeInMinutes = endHour * 60 + endMinute;
+  
+      while (currentTimeInMinutes <= endTimeInMinutes - 60) { // Restamos 60 para asegurar que haya al menos 1 hora disponible
+        let currentHour = Math.floor(currentTimeInMinutes / 60);
+        let currentMinute = currentTimeInMinutes % 60;
+        
         let formattedHour = currentHour.toString().padStart(2, '0');
         let formattedMinute = currentMinute.toString().padStart(2, '0');
         let timeString = `${formattedHour}:${formattedMinute}`;
@@ -154,25 +157,29 @@ const ReservationScreen = ({ route, navigation }) => {
         let displayHour = currentHour > 12 ? currentHour - 12 : currentHour;
         displayHour = displayHour === 0 ? 12 : displayHour;
         
-        slots.push({
-          value: timeString,
-          display: `${displayHour}:${formattedMinute} ${period}`
-        });
-
-        currentMinute += 30;
-        if (currentMinute >= 60) {
-          currentHour += 1;
-          currentMinute = 0;
+        // Si el slot actual permite una hora completa de servicio
+        if (currentTimeInMinutes + 60 <= endTimeInMinutes) {
+          slots.push({
+            value: timeString,
+            display: `${displayHour}:${formattedMinute} ${period}`
+          });
         }
+  
+        // Avanzamos 60 minutos (1 hora)
+        currentTimeInMinutes += 60;
       }
     };
-
+  
     if (businessHours.turno_1) addTimeSlots(businessHours.turno_1);
     if (businessHours.turno_2) addTimeSlots(businessHours.turno_2);
-
-    return slots;
+  
+    // Ordenamos los slots por hora
+    return slots.sort((a, b) => {
+      const [aHour, aMinute] = a.value.split(':').map(Number);
+      const [bHour, bMinute] = b.value.split(':').map(Number);
+      return (aHour * 60 + aMinute) - (bHour * 60 + bMinute);
+    });
   };
-
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -216,6 +223,12 @@ const ReservationScreen = ({ route, navigation }) => {
       ]);
       return false;
     }
+    if (!petition.trim()) {
+      showAlert('error', 'Campos requeridos', 'Por favor proporciona los detalles del servicio que deseas.', [
+        { text: 'OK', onPress: hideAlert }
+      ]);
+      return false;
+    }
     if (!termsAccepted) {
       showAlert('error', 'Términos y condiciones', 'Debes aceptar los términos y condiciones para continuar.', [
         { text: 'OK', onPress: hideAlert }
@@ -224,31 +237,31 @@ const ReservationScreen = ({ route, navigation }) => {
     }
     return true;
   };
-
+  
   const handleReservation = async () => {
     if (!isLoggedIn || !user) {
       checkLoginStatus();
       return;
     }
-
+  
     if (!validateReservation()) {
       return;
     }
-
+  
     setIsLoading(true);
-
+  
     const reservationData = {
       businessId,
       userId: user.uid,
       date: selectedDate,
       selectedTime,
       serviceType: selectedService,
-      requestDetails: petition.trim(), // Cambiado a requestDetails como espera el backend
+      requestDetails: petition.trim(),
       comments: comments.trim(),
       termsAccepted,
       image: image ? `data:image/jpeg;base64,${image}` : null,
     };
-
+  
     try {
       const response = await fetch('https://www.jaydey.com/ServicesMovil/api/reservation', {
         method: 'POST',
@@ -257,10 +270,20 @@ const ReservationScreen = ({ route, navigation }) => {
         },
         body: JSON.stringify(reservationData),
       });
-
+  
       const data = await response.json();
       console.log('Respuesta del servidor:', data);
-
+  
+      if (response.status === 409) {
+        showAlert(
+          'error',
+          'Reservación duplicada',
+          'Ya tienes una reservación para esta fecha y hora en este negocio.',
+          [{ text: 'OK', onPress: hideAlert }]
+        );
+        return;
+      }
+  
       if (data.success) {
         showAlert(
           'success',

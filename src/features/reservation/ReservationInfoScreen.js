@@ -61,11 +61,11 @@ const ReservationItem = ({
           text: 'Cancelada',
           bgColor: '#FFEBEE'
         };
-      case 'concluida':
+      case 'concluido':
         return {
           icon: 'checkmark',
           color: '#f9f9f6',
-          text: 'Concluida',
+          text: 'Concluido',
           bgColor: '#e1d54f'
         }
       default:
