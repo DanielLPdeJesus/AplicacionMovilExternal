@@ -6,7 +6,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
-  const [authToken, setAuthToken] = useState(null); // Agregar estado para el token
+  const [authToken, setAuthToken] = useState(null); 
 
   useEffect(() => {
     checkAuthStatus();
@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
         const { id_token, user } = JSON.parse(sessionData);
         if (id_token && user) {
           setIsLoggedIn(true);
-          setUser({...user, id_token}); // Incluir el token en el objeto user
+          setUser({...user, id_token}); 
           setAuthToken(id_token);
         }
       }
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
     try {
       await AsyncStorage.setItem('userSession', JSON.stringify(userData));
       setIsLoggedIn(true);
-      setUser({...userData.user, id_token: userData.id_token}); // Incluir el token en el objeto user
+      setUser({...userData.user, id_token: userData.id_token}); 
       setAuthToken(userData.id_token);
     } catch (error) {
       console.error('Error al guardar la sesión:', error);
