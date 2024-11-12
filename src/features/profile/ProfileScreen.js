@@ -30,7 +30,7 @@ const ProfileScreen = ({ navigation }) => {
   const formatDate = (date) => {
     if (!date) return '';
     if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      return date; 
+      return date;
     }
     const d = new Date(date);
     const year = d.getFullYear();
@@ -67,6 +67,86 @@ const ProfileScreen = ({ navigation }) => {
     }
   }, [isLoggedIn, user, navigation]);
 
+  const validateField = (name, value) => {
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    
+    switch (name) {
+      case 'full_name':
+        if (!value) {
+          return "El nombre es requerido";
+        } else if (!nameRegex.test(value)) {
+          return "El nombre no debe contener números ni caracteres especiales";
+        }
+        return "";
+
+      case 'last_name':
+        if (!value) {
+          return "El apellido es requerido";
+        } else if (!nameRegex.test(value)) {
+          return "El apellido no debe contener números ni caracteres especiales";
+        }
+        return "";
+
+      case 'phone_number':
+        if (value && !/^\d{10}$/.test(value)) {
+          return "El número de teléfono debe tener exactamente 10 dígitos";
+        }
+        return "";
+
+      case 'birth_date':
+        if (!value) {
+          return "La fecha de nacimiento es requerida";
+        }
+        const currentDate = new Date();
+        const selectedDate = parseDate(value);
+        const age = currentDate.getFullYear() - selectedDate.getFullYear();
+        const monthDiff = currentDate.getMonth() - selectedDate.getMonth();
+        
+        if (selectedDate > currentDate) {
+          return "La fecha de nacimiento no puede ser en el futuro";
+        } else if (age > 90 || (age === 90 && monthDiff > 0)) {
+          return "La edad no puede ser mayor a 90 años";
+        } else if (age < 13 || (age === 13 && monthDiff < 0)) {
+          return "Debes tener al menos 13 años para registrarte";
+        }
+        return "";
+
+      case 'gender':
+        if (!value) {
+          return "El género es requerido";
+        }
+        return "";
+
+      default:
+        return "";
+    }
+  };
+
+  const handleFieldChange = (name, value) => {
+    const newEditedUser = { ...editedUser, [name]: value };
+    setEditedUser(newEditedUser);
+    
+    const fieldError = validateField(name, value);
+    setErrors(prev => ({
+      ...prev,
+      [name]: fieldError
+    }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    const fields = ['full_name', 'last_name', 'phone_number', 'birth_date', 'gender'];
+    
+    fields.forEach(field => {
+      const error = validateField(field, editedUser[field]);
+      if (error) {
+        newErrors[field] = error;
+      }
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleLogout = async () => {
     try {
@@ -91,51 +171,6 @@ const ProfileScreen = ({ navigation }) => {
 
   const hideAlert = () => {
     setAlertConfig({ ...alertConfig, isVisible: false });
-  };
-
-  const validateForm = () => {
-    let newErrors = {};
-  
-    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
-    if (!editedUser.full_name) {
-      newErrors.full_name = "El nombre es requerido";
-    } else if (!nameRegex.test(editedUser.full_name)) {
-      newErrors.full_name = "El nombre no debe contener números ni caracteres especiales";
-    }
-  
-    if (!editedUser.last_name) {
-      newErrors.last_name = "El apellido es requerido";
-    } else if (!nameRegex.test(editedUser.last_name)) {
-      newErrors.last_name = "El apellido no debe contener números ni caracteres especiales";
-    }
-  
-    if (editedUser.phone_number && !/^\d{10}$/.test(editedUser.phone_number)) {
-      newErrors.phone_number = "El número de teléfono debe tener exactamente 10 dígitos";
-    }
-  
-    if (!editedUser.birth_date) {
-      newErrors.birth_date = "La fecha de nacimiento es requerida";
-    } else {
-      const currentDate = new Date();
-      const selectedDate = parseDate(editedUser.birth_date);
-      const age = currentDate.getFullYear() - selectedDate.getFullYear();
-      const monthDiff = currentDate.getMonth() - selectedDate.getMonth();
-      
-      if (selectedDate > currentDate) {
-        newErrors.birth_date = "La fecha de nacimiento no puede ser en el futuro";
-      } else if (age > 90 || (age === 90 && monthDiff > 0)) {
-        newErrors.birth_date = "La edad no puede ser mayor a 90 años";
-      } else if (age < 13 || (age === 13 && monthDiff < 0)) {
-        newErrors.birth_date = "Debes tener al menos 13 años para registrarte";
-      }
-    }
-  
-    if (!editedUser.gender) {
-      newErrors.gender = "El género es requerido";
-    }
-  
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const handleSave = async () => {
@@ -200,7 +235,7 @@ const ProfileScreen = ({ navigation }) => {
     });
   
     if (!result.canceled) {
-      setIsLoading(true);
+      setImageLoading(true);
       try {
         const formData = new FormData();
         formData.append('userId', userData.uid);
@@ -232,7 +267,7 @@ const ProfileScreen = ({ navigation }) => {
         console.error('Error al actualizar la imagen de perfil:', error);
         showAlert('error', 'Error', error.message || 'Ocurrió un error al actualizar la imagen de perfil');
       } finally {
-        setIsLoading(false);
+        setImageLoading(false);
       }
     }
   };
@@ -241,7 +276,7 @@ const ProfileScreen = ({ navigation }) => {
     setShowDatePicker(false);
     if (selectedDate) {
       const formattedDate = formatDate(selectedDate);
-      setEditedUser({...editedUser, birth_date: formattedDate});
+      handleFieldChange('birth_date', formattedDate);
     }
   };
 
@@ -310,21 +345,21 @@ const ProfileScreen = ({ navigation }) => {
               <View style={styles.infoItem}>
                 <Ionicons name="person-outline" size={24} color="#333" />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errors.full_name && styles.inputError]}
                   value={editedUser.full_name}
-                  onChangeText={(text) => setEditedUser({...editedUser, full_name: text})}
+                  onChangeText={(text) => handleFieldChange('full_name', text)}
                   placeholder="Nombre"
                   placeholderTextColor="#999"
                 />
               </View>
               {errors.full_name && <Text style={styles.errorText}>{errors.full_name}</Text>}
-              
+
               <View style={styles.infoItem}>
                 <Ionicons name="person-outline" size={24} color="#333" />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errors.last_name && styles.inputError]}
                   value={editedUser.last_name}
-                  onChangeText={(text) => setEditedUser({...editedUser, last_name: text})}
+                  onChangeText={(text) => handleFieldChange('last_name', text)}
                   placeholder="Apellido"
                   placeholderTextColor="#999"
                 />
@@ -344,84 +379,86 @@ const ProfileScreen = ({ navigation }) => {
           </View>
 
           {isEditing ? (
-            <View style={styles.infoItem}>
-              <Ionicons name="call-outline" size={24} color="#333" />
-              <TextInput
-                style={styles.input}
-                value={editedUser.phone_number}
-                onChangeText={(text) => setEditedUser({...editedUser, phone_number: text})}
-                placeholder="Teléfono"
-                placeholderTextColor="#999"
-                keyboardType="phone-pad"
-              />
-            </View>
-          ) : (
-            <View style={styles.infoItem}>
-              <Ionicons name="call-outline" size={24} color="#333" />
-              <Text style={styles.infoValue}>{userData.phone_number || 'No especificado'}</Text>
-            </View>
-          )}
+          <View style={styles.infoItem}>
+            <Ionicons name="call-outline" size={24} color="#333" />
+            <TextInput
+              style={[styles.input, errors.phone_number && styles.inputError]}
+              value={editedUser.phone_number}
+              onChangeText={(text) => handleFieldChange('phone_number', text)}
+              placeholder="Teléfono"
+              placeholderTextColor="#999"
+              keyboardType="phone-pad"
+            />
+          </View>
+        ) : (
+          <View style={styles.infoItem}>
+            <Ionicons name="call-outline" size={24} color="#333" />
+            <Text style={styles.infoValue}>{userData.phone_number || 'No especificado'}</Text>
+          </View>
+        )}
+    {errors.phone_number && <Text style={styles.errorText}>{errors.phone_number}</Text>}
 
-{errors.phone_number && <Text style={styles.errorText}>{errors.phone_number}</Text>}
-
-{isEditing ? (
-  <View style={styles.infoItem}>
-    <Ionicons name="calendar-outline" size={24} color="#333" />
-    <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
-      <Text style={styles.datePickerText}>
-        {editedUser.birth_date ? parseDate(editedUser.birth_date).toLocaleDateString() : 'Seleccionar fecha'}
-      </Text>
-    </TouchableOpacity>
-    {showDatePicker && (
-      <DateTimePicker
-        value={editedUser.birth_date ? parseDate(editedUser.birth_date) : new Date()}
-        mode="date"
-        display="default"
-        onChange={handleDateChange}
-      />
+    {isEditing ? (
+      <View style={styles.infoItem}>
+        <Ionicons name="calendar-outline" size={24} color="#333" />
+        <TouchableOpacity 
+          onPress={() => setShowDatePicker(true)} 
+          style={[styles.datePickerButton, errors.birth_date && styles.inputError]}
+        >
+          <Text style={styles.datePickerText}>
+            {editedUser.birth_date ? parseDate(editedUser.birth_date).toLocaleDateString() : 'Seleccionar fecha'}
+          </Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={editedUser.birth_date ? parseDate(editedUser.birth_date) : new Date()}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+          />
+        )}
+      </View>
+    ) : (
+      <View style={styles.infoItem}>
+        <Ionicons name="calendar-outline" size={24} color="#333" />
+        <Text style={styles.infoValue}>
+          {userData.birth_date ? parseDate(userData.birth_date).toLocaleDateString() : 'No especificado'}
+        </Text>
+      </View>
     )}
-  </View>
-) : (
-  <View style={styles.infoItem}>
-    <Ionicons name="calendar-outline" size={24} color="#333" />
-    <Text style={styles.infoValue}>
-      {userData.birth_date ? parseDate(userData.birth_date).toLocaleDateString() : 'No especificado'}
-    </Text>
-  </View>
-)}
-{errors.birth_date && <Text style={styles.errorText}>{errors.birth_date}</Text>}
+    {errors.birth_date && <Text style={styles.errorText}>{errors.birth_date}</Text>}
 
-{isEditing ? (
-  <View style={styles.infoItem}>
-    <Ionicons name="people-outline" size={24} color="#333" />
-    <Picker
-      selectedValue={editedUser.gender}
-      style={styles.picker}
-      onValueChange={(itemValue) => setEditedUser({...editedUser, gender: itemValue})}
-    >
-      <Picker.Item label="Seleccionar género" value="" />
-      <Picker.Item label="Masculino" value="Masculino" />
-      <Picker.Item label="Femenino" value="Femenino" />
-      <Picker.Item label="Otro" value="Otro" />
-    </Picker>
+    {isEditing ? (
+      <View style={styles.infoItem}>
+        <Ionicons name="people-outline" size={24} color="#333" />
+        <Picker
+          selectedValue={editedUser.gender}
+          style={[styles.picker, errors.gender && styles.pickerError]}
+          onValueChange={(itemValue) => handleFieldChange('gender', itemValue)}
+        >
+          <Picker.Item label="Seleccionar género" value="" />
+          <Picker.Item label="Masculino" value="Masculino" />
+          <Picker.Item label="Femenino" value="Femenino" />
+          <Picker.Item label="Otro" value="Otro" />
+        </Picker>
+      </View>
+    ) : (
+      <View style={styles.infoItem}>
+        <Ionicons name="people-outline" size={24} color="#333" />
+        <Text style={styles.infoValue}>{userData.gender || 'No especificado'}</Text>
+      </View>
+    )}
+    {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
   </View>
-) : (
-  <View style={styles.infoItem}>
-    <Ionicons name="people-outline" size={24} color="#333" />
-    <Text style={styles.infoValue}>{userData.gender || 'No especificado'}</Text>
-  </View>
-)}
-{errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
-</View>
 
-<CustomAlert
-isVisible={alertConfig.isVisible}
-type={alertConfig.type}
-title={alertConfig.title}
-message={alertConfig.message}
-buttons={alertConfig.buttons}
-onClose={hideAlert}
-/>
+  <CustomAlert
+    isVisible={alertConfig.isVisible}
+    type={alertConfig.type}
+    title={alertConfig.title}
+    message={alertConfig.message}
+    buttons={alertConfig.buttons}
+    onClose={hideAlert}
+  />
 </ScrollView>
 </View>
 );
@@ -540,10 +577,22 @@ flex: 1,
 fontSize: 16,
 color: '#333',
 marginLeft: 15,
+padding: 8,
+},
+inputError: {
+borderColor: 'red',
+borderWidth: 1,
+borderRadius: 5,
+},
+pickerError: {
+borderColor: 'red',
+borderWidth: 1,
+borderRadius: 5,
 },
 datePickerButton: {
 flex: 1,
 marginLeft: 15,
+padding: 8,
 },
 datePickerText: {
 fontSize: 16,
