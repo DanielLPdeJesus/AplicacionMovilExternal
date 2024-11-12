@@ -243,8 +243,16 @@ const BusinessCard = ({ business, navigation }) => {
     }
   };
 
+  const handleCardPress = () => {
+    navigation.navigate('ViewBussinesScreen', { businessId: business.id });
+  };
+
   return (
-    <View style={styles.businessCard}>
+    <TouchableOpacity 
+      style={styles.businessCard}
+      onPress={handleCardPress}
+      activeOpacity={0.97}
+    >
       <Image 
         source={{ uri: business.negocios_imagenes[0] }} 
         style={styles.businessImage} 
@@ -256,7 +264,11 @@ const BusinessCard = ({ business, navigation }) => {
         <BusinessRating business={business} />
       </View>
 
-      <View style={styles.businessActions}>
+      <View 
+        style={styles.businessActions}
+        onStartShouldSetResponder={() => true}
+        onTouchEnd={e => e.stopPropagation()}
+      >
         <TouchableOpacity 
           style={styles.actionButton}
           onPress={() => navigation.navigate('ViewBussinesScreen', { businessId: business.id })}
@@ -282,7 +294,11 @@ const BusinessCard = ({ business, navigation }) => {
         <Text style={styles.userName}>{business.nombre_propietario}</Text>
       </View>
 
-      <View style={styles.socialBar}>
+      <View 
+        style={styles.socialBar}
+        onStartShouldSetResponder={() => true}
+        onTouchEnd={e => e.stopPropagation()}
+      >
         <View style={styles.socialButtonContainer}>
           <TouchableOpacity 
             style={[styles.socialButton, isLiked && styles.activeSocialButton]} 
@@ -330,9 +346,10 @@ const BusinessCard = ({ business, navigation }) => {
         buttons={alertConfig.buttons}
         onClose={() => setAlertConfig(prev => ({ ...prev, isVisible: false }))}
       />
-    </View>
+    </TouchableOpacity>
   );
 };
+
 const HomeScreen = ({ navigation }) => {
   const [businesses, setBusinesses] = useState([]);
   const [newBusinesses, setNewBusinesses] = useState([]);
@@ -580,7 +597,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    overflow: 'hidden', 
+    overflow: 'hidden',
   },
   businessImage: {
     width: '100%',
@@ -601,7 +618,7 @@ const styles = StyleSheet.create({
   },
   socialBar: {
     flexDirection: 'row',
-    justifyContent: 'center', 
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 8,
@@ -613,7 +630,7 @@ const styles = StyleSheet.create({
   socialButtonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 45, 
+    marginHorizontal: 45,
   },
   socialButton: {
     padding: 3,
@@ -658,6 +675,10 @@ const styles = StyleSheet.create({
   reserveButtonText: {
     color: '#fff',
   },
+  disabledButton: {
+    backgroundColor: '#ccc',
+    borderColor: '#ccc',
+  },
   userInfo: {
     padding: 10,
     flexDirection: 'row',
@@ -667,8 +688,8 @@ const styles = StyleSheet.create({
     borderColor: '#eee',
   },
   newIconInfo: {
-    width: 20,     
-    height: 20,   
+    width: 20,
+    height: 20,
     marginRight: 8,
     borderRadius: 100,
   },
@@ -682,40 +703,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 5,
   },
-  emptyStateContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyStateText: {
-    fontSize: 18,
-    color: '#888',
-    textAlign: 'center',
-    marginTop: 15,
-  },
-  emptyStateSubText: {
+  ratingText: {
+    marginLeft: 5,
     fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-    marginTop: 5,
-  },
-  emptyListContent: {
-    flexGrow: 1,
-  },
-  loadingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
     color: '#666',
   },
   errorContainer: {
@@ -737,11 +727,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
-  },
-  ratingText: {
-    marginLeft: 5,
-    fontSize: 14,
-    color: '#666',
   },
   loadingContainer: {
     position: 'absolute',
