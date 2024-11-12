@@ -77,7 +77,7 @@ const ProfileScreen = ({ navigation }) => {
       });
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
-      showAlert('error', 'Error', 'No se pudo cerrar la sesión. Por favor, inténtalo de nuevo.');
+      showAlert('error', 'Error', 'No se pudo cerrar la sesión. Por favor, inténtelo de nuevo.');
     }
   };
 
@@ -188,7 +188,7 @@ const ProfileScreen = ({ navigation }) => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (permissionResult.granted === false) {
-      showAlert('error', 'Permiso requerido', 'Necesitamos permiso para acceder a tu galería');
+      showAlert('error', 'Permiso requerido', 'Necesitamos permiso para acceder a su galería');
       return;
     }
   

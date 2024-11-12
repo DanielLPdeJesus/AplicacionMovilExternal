@@ -127,7 +127,7 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
         console.error('Error al abrir el correo:', error);
         Alert.alert(
           'Error',
-          'No se pudo abrir el correo electrónico. Por favor, contacta directamente al correo: ' + businessData.correo,
+          'No se pudo abrir el correo electrónico. Por favor, contacte directamente al correo: ' + businessData.correo,
           [{ text: 'OK' }]
         );
       }
@@ -285,7 +285,7 @@ const ReservationDetailsScreen = ({ route, navigation }) => {
       {/* Petición */}
       {reservationData.peticion && (
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Tu Petición</Text>
+          <Text style={styles.sectionTitle}>Su Petición</Text>
           <Text style={styles.peticionText}>{reservationData.peticion}</Text>
         </View>
       )}

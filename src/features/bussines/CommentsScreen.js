@@ -100,7 +100,7 @@ const CommentsScreen = ({ route, navigation }) => {
 
   const handleSubmitComment = async () => {
     if (!user) {
-      showAlert('error', 'Iniciar sesión requerido', 'Para comentar, por favor inicia sesión o regístrate.', [
+      showAlert('error', 'Iniciar sesión requerido', 'Para comentar, por favor inicie sesión o regístrese.', [
         {
           text: 'Cancelar',
           onPress: hideAlert,
@@ -118,7 +118,7 @@ const CommentsScreen = ({ route, navigation }) => {
     }
 
     if (!newComment.trim()) {
-      showAlert('error', 'Error', 'Por favor escribe un comentario.');
+      showAlert('error', 'Error', 'Por favor escriba un comentario.');
       return;
     }
 
@@ -162,7 +162,7 @@ const CommentsScreen = ({ route, navigation }) => {
         await fetchComments();
         showAlert('success', 'Éxito', 'Comentario publicado correctamente');
       } else {
-        showAlert('error', 'Error', 'No se pudo publicar el comentario. Por favor, inténtalo de nuevo.');
+        showAlert('error', 'Error', 'No se pudo publicar el comentario. Por favor, inténtelo de nuevo.');
       }
     } finally {
       setIsLoading(false);
@@ -187,7 +187,7 @@ const CommentsScreen = ({ route, navigation }) => {
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Escribe un comentario..."
+          placeholder="Escriba un comentario..."
           value={newComment}
           onChangeText={setNewComment}
           multiline

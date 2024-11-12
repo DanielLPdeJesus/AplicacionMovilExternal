@@ -76,7 +76,7 @@ const HelpModal = ({ visible, onClose }) => {
     } catch (error) {
       Alert.alert(
         'Error',
-        'No se pudo abrir el correo electrónico. Por favor, contáctanos directamente en jaydeyglow@gmail.com',
+        'No se pudo abrir el correo electrónico. Por favor, contáctenos directamente en jaydeyglow@gmail.com',
         [{ text: 'OK' }]
       );
     }
@@ -92,9 +92,9 @@ const HelpModal = ({ visible, onClose }) => {
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>¿Necesitas ayuda? 🤝</Text>
+            <Text style={styles.modalTitle}>¿Necesita ayuda? 🤝</Text>
             <Text style={styles.modalSubtitle}>
-              ¡Estamos aquí para asistirte! Elige cómo prefieres contactarnos:
+              ¡Estamos aquí para asistirle! Elija cómo prefiere contactarnos:
             </Text>
           </View>
 

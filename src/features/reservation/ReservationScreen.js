@@ -278,7 +278,7 @@ const ReservationScreen = ({ route, navigation }) => {
       showAlert(
         'error',
         'Error',
-        'No se pudo cargar la imagen. Intenta de nuevo.',
+        'No se pudo cargar la imagen. Inténtelo de nuevo.',
         [{ text: 'OK', onPress: hideAlert }]
       );
     }
@@ -286,31 +286,31 @@ const ReservationScreen = ({ route, navigation }) => {
 
   const validateReservation = () => {
     if (!selectedDate) {
-      showAlert('error', 'Campos requeridos', 'Por favor selecciona una fecha.', [
+      showAlert('error', 'Campos requeridos', 'Por favor seleccione una fecha.', [
         { text: 'OK', onPress: hideAlert }
       ]);
       return false;
     }
     if (!selectedTime) {
-      showAlert('error', 'Campos requeridos', 'Por favor selecciona una hora.', [
+      showAlert('error', 'Campos requeridos', 'Por favor seleccione una hora.', [
         { text: 'OK', onPress: hideAlert }
       ]);
       return false;
     }
     if (!selectedService) {
-      showAlert('error', 'Campos requeridos', 'Por favor selecciona un servicio.', [
+      showAlert('error', 'Campos requeridos', 'Por favor seleccione un servicio.', [
         { text: 'OK', onPress: hideAlert }
       ]);
       return false;
     }
     if (!petition.trim()) {
-      showAlert('error', 'Campos requeridos', 'Por favor proporciona los detalles del servicio que deseas.', [
+      showAlert('error', 'Campos requeridos', 'Por favor proporcione los detalles del servicio que desea.', [
         { text: 'OK', onPress: hideAlert }
       ]);
       return false;
     }
     if (!termsAccepted) {
-      showAlert('error', 'Términos y condiciones', 'Debes aceptar los términos y condiciones para continuar.', [
+      showAlert('error', 'Términos y condiciones', 'Debe aceptar los términos y condiciones para continuar.', [
         { text: 'OK', onPress: hideAlert }
       ]);
       return false;
@@ -357,7 +357,7 @@ const ReservationScreen = ({ route, navigation }) => {
         showAlert(
           'error',
           'Reservación duplicada',
-          'Ya tienes una reservación para esta fecha y hora en este negocio.',
+          'Ya cuenta con una reservación para esta fecha y hora en este negocio.',
           [{ text: 'OK', onPress: hideAlert }]
         );
         return;
@@ -367,7 +367,7 @@ const ReservationScreen = ({ route, navigation }) => {
         showAlert(
           'success',
           '¡Reservación exitosa!',
-          'Tu cita ha sido programada correctamente.',
+          'Su cita ha sido programada correctamente.',
           [
             {
               text: 'Ver mis reservaciones',
@@ -386,7 +386,7 @@ const ReservationScreen = ({ route, navigation }) => {
       showAlert(
         'error',
         'Error',
-        'No se pudo procesar tu reservación. Por favor, intenta de nuevo.',
+        'No se pudo procesar su reservación. Por favor, inténtelo de nuevo.',
         [{ text: 'OK', onPress: hideAlert }]
       );
     } finally {
@@ -416,7 +416,7 @@ const ReservationScreen = ({ route, navigation }) => {
         <View style={styles.toleranceTextContainer}>
           <Text style={styles.toleranceTitle}>10 Minutos de tolerancia</Text>
           <Text style={styles.toleranceDescription} numberOfLines={2}>
-            Por favor llega a tiempo. Después del tiempo de tolerancia, tu cita podría ser reasignada.
+          Por favor llegue a tiempo. Después del tiempo de tolerancia, su cita podría ser reasignada.
           </Text>
         </View>
       </View>
@@ -505,7 +505,7 @@ const ReservationScreen = ({ route, navigation }) => {
         <Text style={styles.sectionTitle}>Detalles del Servicio</Text>
         <TextInput
           style={styles.petitionInput}
-          placeholder="Proporciona un ejemplo de lo que deseas que te hagan al agregar tu solicitud de servicio."
+          placeholder="Proporcione un ejemplo de lo que desea que le hagan al agregar su solicitud de servicio."
           multiline
           value={petition}
           onChangeText={setPetition}
@@ -514,7 +514,7 @@ const ReservationScreen = ({ route, navigation }) => {
 
         <TextInput
           style={styles.commentsInput}
-          placeholder="Agrega comentarios adicionales"
+          placeholder="Agregue comentarios adicionales"
           multiline
           value={comments}
           onChangeText={setComments}

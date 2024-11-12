@@ -140,7 +140,7 @@ const BusinessCard = ({ business, navigation }) => {
   
   const handleInteraction = async (type) => {
     if (!user) {
-      showAlert('error', 'Iniciar sesión requerido', 'Para reaccionar a los negocios, por favor inicia sesión o regístrate.', [
+      showAlert('error', 'Inicio de sesión requerido, Para reaccionar a los negocios, por favor inicie sesión o regístrese.', [
         {
           text: 'Cancelar',
           style: 'cancel',
@@ -232,7 +232,7 @@ const BusinessCard = ({ business, navigation }) => {
       showAlert(
         'info',
         'Negocio en Proceso',
-        'El negocio no está disponible para reservaciones en este momento. Próximamente podrá atender tus reservaciones.',
+        'El negocio no está disponible para reservaciones en este momento. Próximamente podrá atender sus reservaciones.',
         [{
           text: 'Entendido',
           onPress: () => setAlertConfig(prev => ({ ...prev, isVisible: false }))
@@ -378,7 +378,7 @@ const HomeScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error fetching businesses:', error);
-      setError('No se pudieron cargar los negocios. Por favor, intenta de nuevo.');
+      setError('No se pudieron cargar los negocios. Por favor, intente de nuevo.');
     } finally {
       setIsLoading(false);
       setRefreshing(false);

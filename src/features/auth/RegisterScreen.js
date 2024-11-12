@@ -194,7 +194,7 @@ const RegisterScreen = ({ navigation }) => {
 
   const handleRegister = async () => {
     if (!isFormValid) {
-      showAlert('error', 'Error de validación', 'Por favor, corrige los errores en el formulario.');
+      showAlert('error', 'Error de validación', 'Por favor, corriga los errores en el formulario.');
       return;
     }
    
@@ -230,7 +230,7 @@ const RegisterScreen = ({ navigation }) => {
         showAlert('error', 'Error', data.message || "Error durante el registro.");
       }
     } catch (error) {
-      showAlert('error', 'Error', "No se pudo conectar con el servidor. Por favor, inténtalo más tarde.");
+      showAlert('error', 'Error', "No se pudo conectar con el servidor. Por favor, intente más tarde.");
     } finally {
       setIsLoading(false);
     }
@@ -375,7 +375,7 @@ const RegisterScreen = ({ navigation }) => {
 
       <View style={styles.termsContainer}>
         <Text style={styles.textregi}>
-          Recuerda que al Registrarte aceptas automáticamente los{' '}
+          Recuerde que al Registrarte aceptas automáticamente los{' '}
           <Text 
             style={styles.link}
             onPress={() => navigation.navigate('TermsAndPrivacy', { viewType: 'terms' })}

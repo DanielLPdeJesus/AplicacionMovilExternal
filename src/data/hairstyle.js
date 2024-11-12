@@ -3,7 +3,7 @@ export const hairstyles = [
       id: "1",
       name: "BuzzCut",
       displayName: "Buzz Cut",
-      description: "Corte de cabello muy corto y uniforme, ideal para un look fresco y fácil de mantener.",
+      description: "Corte de cabello muy corto y uniforme, ideal para un loock fresco y fácil de mantener.",
       image: require("../../assets/buzzcut.jpg"),
     },
     {
@@ -17,14 +17,14 @@ export const hairstyles = [
       id: "3",
       name: "Pompadour",
       displayName: "Pompadour",
-      description: "Estilo con gran volumen en la parte superior, peinado hacia atrás para un look elegante y clásico.",
+      description: "Estilo con gran volumen en la parte superior, peinado hacia atrás para un loock elegante y clásico.",
       image: require("../../assets/popadour.jpg"),
     },
     {
       id: "4",
       name: "UnderCut",
       displayName: "Under Cut",
-      description: "Corte con los lados y la parte trasera rapados y el cabello largo en la parte superior, ideal para un look audaz y moderno.",
+      description: "Corte con los lados y la parte trasera rapados y el cabello largo en la parte superior, ideal para un loock audaz y moderno.",
       image: require("../../assets/undercut.png"),
     },
     {
@@ -52,7 +52,7 @@ export const hairstyles = [
       id: "8",
       name: "DoubleBun",
       displayName: "Double Bun",
-      description: "Estilo con dos moños, uno a cada lado de la cabeza, perfecto para un look divertido y juvenil.",
+      description: "Estilo con dos moños, uno a cada lado de la cabeza, perfecto para un loock divertido y juvenil.",
       image: require("../../assets/doublebun.jpeg"),
     },
     {
@@ -73,21 +73,21 @@ export const hairstyles = [
       id: "11",
       name: "ShortTwintails",
       displayName: "Short Twin Tails",
-      description: "Cabello corto dividido en dos coletas, perfecto para un look juvenil y original.",
+      description: "Cabello corto dividido en dos coletas, perfecto para un loock juvenil y original.",
       image: require("../../assets/shorttwin.jpg"),
     },
     {
       id: "12",
       name: "ShortStraight",
       displayName: "Short Straight",
-      description: "Cabello corto y liso peinado hacia atrás, ideal para un look elegante y fácil de manejar.",
+      description: "Cabello corto y liso peinado hacia atrás, ideal para un loock elegante y fácil de manejar.",
       image: require("../../assets/straint.jpeg"),
     },
     {
       id: "13",
       name: "CurlyBob",
       displayName: "Curly Bob",
-      description: "Bob con rizos, para un look voluminoso y lleno de personalidad.",
+      description: "Bob con rizos, para un loock voluminoso y lleno de personalidad.",
       image: require("../../assets/curlebob.jpg"),
     }
   ];

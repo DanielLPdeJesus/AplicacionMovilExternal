@@ -62,7 +62,7 @@ const LoginScreen = ({ navigation }) => {
 
     const handleLogin = async () => {
         if (!email || !password) {
-            showAlert('error', 'Error', 'Por favor, ingresa tu correo electrónico y contraseña.', [
+            showAlert('error', 'Error', 'Por favor, ingrese su correo electrónico y contraseña.', [
                 { text: 'OK', onPress: hideAlert }
             ]);
             return;
@@ -104,7 +104,7 @@ const LoginScreen = ({ navigation }) => {
             }
         } catch (error) {
             console.error('Error durante el inicio de sesión:', error);
-            showAlert('error', 'Error', 'Hubo un problema al conectar con el servidor. Por favor, inténtalo de nuevo.', [
+            showAlert('error', 'Error', 'Hubo un problema al conectar con el servidor. Por favor, inténtelo de nuevo.', [
                 { text: 'OK', onPress: hideAlert }
             ]);
         } finally {
@@ -150,7 +150,7 @@ const LoginScreen = ({ navigation }) => {
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.registerText}>¿No tienes cuenta? <Text style={styles.registerTextRegis}>Registrate</Text></Text>
+                <Text style={styles.registerText}>¿Aún no tiene una cuenta? <Text style={styles.registerTextRegis}>Regístrese</Text></Text>
             </TouchableOpacity>
 
             <CustomAlert

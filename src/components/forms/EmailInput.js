@@ -6,7 +6,7 @@ const EmailInput = ({ value, onChangeText }) => {
         <View style={styles.inputContainer}>
             <TextInput
                 style={styles.emailInput}
-                placeholder="Ingresa tu correo"
+                placeholder="Ingrese su correo"
                 placeholderTextColor="#999"
                 value={value}
                 onChangeText={onChangeText}

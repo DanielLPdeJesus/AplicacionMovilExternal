@@ -63,10 +63,10 @@ const ReservationScreen = () => {
 
       <View style={styles.toleranceNotice}>
         <Text style={styles.toleranceTitle}>10 Minutos de tolerancia</Text>
-        <Text style={styles.toleranceDescription}>Si no puedes cumplir, alguien más tomará tu lugar...</Text>
+        <Text style={styles.toleranceDescription}>Si no puedes cumplir, alguien más tomará su lugar...</Text>
       </View>
 
-      <Text style={styles.sectionTitle}>Selecciona Fecha y Hora</Text>
+      <Text style={styles.sectionTitle}>Seleccione Fecha y Hora</Text>
 
       <Text style={styles.label}>Hora:</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeContainer}>
@@ -124,7 +124,7 @@ const ReservationScreen = () => {
       <Text style={styles.sectionTitle}>Petición</Text>
       <TextInput
         style={styles.petitionInput}
-        placeholder="Proporciona un ejemplo de lo que deseas que te hagan al agregar tu solicitud de servicio."
+        placeholder="Proporcione un ejemplo de lo que desea que le hagan al agregar su solicitud de servicio."
         multiline
         value={petition}
         onChangeText={setPetition}
@@ -138,17 +138,17 @@ const ReservationScreen = () => {
 
       <TextInput
         style={styles.commentsInput}
-        placeholder="Agrega comentarios adicionales"
+        placeholder="Agregue comentarios adicionales"
         value={comments}
         onChangeText={setComments}
       />
 
       <View style={styles.reminderContainer}>
         <Ionicons name="alarm-outline" size={24} color="red" />
-        <Text style={styles.reminderText}>Diez minutos antes podrían evitar que pierdas la reservación</Text>
+        <Text style={styles.reminderText}>Diez minutos antes podrían evitar que pierda la reservación</Text>
       </View>
 
-      <Text style={styles.policyNotice}>Aviso: Revisa nuestra política de puntualidad</Text>
+      <Text style={styles.policyNotice}>Aviso: Revise nuestra política de puntualidad</Text>
 
       <View style={styles.termsContainer}>
         <TouchableOpacity 

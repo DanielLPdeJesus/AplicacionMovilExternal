@@ -46,7 +46,7 @@ const RecuperarContrasenaScreen = ({ navigation }) => {
         throw new Error(data.error || 'Error en la solicitud');
       }
     } catch (error) {
-      showAlert('error', 'Error', 'Hubo un problema al procesar tu solicitud. Por favor, intenta de nuevo más tarde.', [{ text: 'OK', onPress: hideAlert }]);
+      showAlert('error', 'Error', 'Hubo un problema al procesar su solicitud. Por favor, intente de nuevo más tarde.', [{ text: 'OK', onPress: hideAlert }]);
     } finally {
       setIsLoading(false);
     }

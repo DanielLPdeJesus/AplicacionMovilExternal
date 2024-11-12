@@ -9,8 +9,8 @@ const WelcomeComponent = () => {
         style={styles.image}
       />
       <View style={styles.textContainer}>
-        <Text style={styles.mainText}>Encantado de verte!</Text>
-        <Text style={styles.subText}>"¡Reserva tu primera cita de belleza al instante!"</Text>
+        <Text style={styles.mainText}>Encantado de verle!</Text>
+        <Text style={styles.subText}>"¡Reserve su primera cita de belleza al instante!"</Text>
       </View>
     </View>
   );

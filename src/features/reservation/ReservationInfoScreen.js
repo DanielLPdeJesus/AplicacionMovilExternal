@@ -258,24 +258,24 @@ const ReservationsScreen = ({ navigation }) => {
   };
 
   const getNotificationContent = (reservation, previousState) => {
-    const baseTitle = '¡Actualización de tu reservación!';
+    const baseTitle = '¡Actualización de su reservación!';
     let body = '';
 
     switch(reservation.estado.toLowerCase()) {
       case 'aceptada':
-        body = `Tu reservación de ${reservation.tipo_de_servicio} ha sido Aceptada. 🎉`;
+        body = `Su reservación de ${reservation.tipo_de_servicio} ha sido Aceptada. 🎉`;
         break;
       case 'rechazada':
-        body = `Lo sentimos, tu reservación de ${reservation.tipo_de_servicio} ha sido rechazada. ❌`;
+        body = `Lo sentimos, su reservación de ${reservation.tipo_de_servicio} ha sido rechazada. ❌`;
         break;
       case 'cancelada':
-        body = `Tu reservación de ${reservation.tipo_de_servicio} ha sido cancelada. ⚠️`;
+        body = `Su reservación de ${reservation.tipo_de_servicio} ha sido cancelada. ⚠️`;
         break;
       case 'concluida':
-        body = `¡Tu reservación de ${reservation.tipo_de_servicio} ha sido completada! ¡Gracias por tu preferencia! ✨`;
+        body = `¡Su reservación de ${reservation.tipo_de_servicio} ha sido completada! ¡Gracias por su preferencia! ✨`;
         break;
       default:
-        body = `El estado de tu reservación ha cambiado de ${previousState} a ${reservation.estado}`;
+        body = `El estado de su reservación ha cambiado de ${previousState} a ${reservation.estado}`;
     }
 
     return { title: baseTitle, body };
@@ -346,7 +346,7 @@ const ReservationsScreen = ({ navigation }) => {
       isVisible: true,
       type: 'error',
       title: 'Cancelar Reservación',
-      message: '¿Estás seguro que deseas cancelar esta reservación?',
+      message: '¿Está seguro de que desea cancelar esta reservación?',
       buttons: [
         {
           text: 'No',
@@ -410,7 +410,7 @@ const ReservationsScreen = ({ navigation }) => {
                 isVisible: true,
                 type: 'error',
                 title: 'Error',
-                message: 'Hubo un problema al cancelar la reservación. Por favor, intenta de nuevo.',
+                message: 'Hubo un problema al cancelar la reservación. Por favor, inténtelo de nuevo.',
                 buttons: [
                   {
                     text: 'OK',

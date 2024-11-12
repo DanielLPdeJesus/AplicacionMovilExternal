@@ -9,7 +9,7 @@ const PasswordInput = ({ value, onChangeText }) => {
         <View style={styles.passwordContainer}>
             <TextInput
                 style={styles.passwordInput}
-                placeholder="Ingresa tu contraseña"
+                placeholder="Ingrese su contraseña"
                 placeholderTextColor="#999"
                 value={value}
                 onChangeText={onChangeText}

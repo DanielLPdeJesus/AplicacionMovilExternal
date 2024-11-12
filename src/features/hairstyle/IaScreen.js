@@ -129,7 +129,7 @@ function IaScreen({ navigation }) {
     if (error.message === "INVALID_IMAGE") {
       errorTitle = "Lo sentimos";
       errorMessage =
-        "Su imagen no es válida para procesar. Por favor, asegúrese de que la foto muestre claramente su rostro y vuelva a intentarlo.";
+        "La imagen no es válida para procesar. Por favor, asegúrese de que la foto muestre claramente su rostro y vuelva a intentarlo.";
     } else if (error.message === "TIMEOUT") {
       errorMessage =
         "El procesamiento está tomando demasiado tiempo. Por favor, intente nuevamente.";
@@ -245,7 +245,7 @@ function IaScreen({ navigation }) {
         <Text style={styles.avisoTitle}>Aviso</Text>
         <Text style={styles.avisoText}>Prueba los Diseños con IA</Text>
         <Text style={styles.avisoSubtext}>
-          Dale click al nombre del corte y suba una foto suya...
+        Haga clic en el nombre del corte y suba una foto suya...
         </Text>
       </View>
 
